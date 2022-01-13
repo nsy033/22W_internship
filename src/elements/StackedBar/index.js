@@ -7,6 +7,10 @@ function StackedBar() {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const margin = {top: 20, right: 20, bottom: 30, left: 40};
+
+    var bar_cnt = 0;
+
     var x = d3.scaleLinear();
     var y = d3.scaleBand()
         .paddingInner(0.05)
@@ -14,11 +18,32 @@ function StackedBar() {
     var z = d3.scaleOrdinal()
         .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
 
+    const tooltip = d3.select("#tooltip");
+    const onMouseEnter = (event, datum) => {
+        tooltip.style("opacity", 1);
+        tooltip.select("#tooltip_value")
+            .attr("x", x((datum[1]+datum[0])/2))
+            .attr("y", y(datum.data.State) + y.bandwidth())
+            .attr("transform", "translate(-25, -2)")
+            .text(datum[1]);
+        var selected_bar = document.getElementById(event.toElement.id);
+        selected_bar.style = 'opacity: 0.8';
+    }
+    const onMouseLeave = (event, datum) => {
+        tooltip.style("opacity", 0);
+        var selected_bar = document.getElementById(event.fromElement.id);
+        selected_bar.style = 'opacity: 1';
+    }
+    const onMouseClick = (event, datum) => {
+        console.log("legend mouse click")
+        console.log(datum)
+    }
+
     useEffect(()=>{
         d3.csv(example).then(function(data) {
             setData(data);
             setLoading(false);
-        })
+        });
     }, [])
 
     useEffect(() => { if (!loading) {
@@ -39,7 +64,6 @@ function StackedBar() {
         z.domain(keys);
 
         const svg = d3.select(svgRef.current);
-        const margin = {top: 20, right: 20, bottom: 30, left: 40};
         const width = svg.attr("width") - margin.left - margin.right;
         const height = svg.attr("height") - margin.top - margin.bottom;
         var g = svg.select("#svg_frame").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
@@ -56,10 +80,19 @@ function StackedBar() {
             .data(function(d) { 
                 return d; })
             .enter().append("rect")
-            .attr("y", function(d) { return y(d.data.State); })
             .attr("x", function(d) { return x(d[0]); })
+            .attr("y", function(d) { return y(d.data.State); })
             .attr("width", function(d) { return x(d[1]) - x(d[0]); })
-            .attr("height", y.bandwidth());	
+            .attr("height", y.bandwidth())
+            .attr("id", () => {
+                bar_cnt++;
+                return ("bar"+bar_cnt);
+            });
+
+        g.select("#chart")
+            .selectAll("rect")
+            .on('mouseenter', (event, datum) => onMouseEnter(event, datum))
+            .on('mouseleave', (event, datum) => onMouseLeave(event, datum));
 
         g.select("#yaxis")
             .attr("transform", "translate(0,0)")
@@ -70,9 +103,6 @@ function StackedBar() {
             .call(d3.axisBottom(x).ticks(null, "s"))
 
         var legend = g.select("#legend")
-            .attr("font-family", "sans-serif")
-            .attr("font-size", 10)
-            .attr("text-anchor", "end")
             .selectAll("g")
             .data(keys.slice().reverse())
             .enter().append("g")
@@ -82,13 +112,15 @@ function StackedBar() {
             .attr("x", width - 19)
             .attr("width", 19)
             .attr("height", 19)
-            .attr("fill", z);
+            .attr("fill", z)
+            .on('click', (event, datum) => onMouseClick(event, datum));
 
         legend.append("text")
             .attr("x", width - 24)
             .attr("y", 9.5)
             .attr("dy", "0.32em")
-            .text(function(d) { return d; });
+            .text(function(d) { return d; })
+            .on('click', (event, datum) => onMouseClick(event, datum));
     }}, [loading]);
 
     return (
@@ -97,9 +129,12 @@ function StackedBar() {
             <svg ref = {svgRef} width="960" height="960">
                 <g id = "svg_frame">
                     <g id = "chart"/>
-                    <g id = "xaxis" className= "axis"/>
-                    <g id = "yaxis" className= "axis"/>
-                    <g id = "legend"/>
+                    <g id = "xaxis" className = "axis"/>
+                    <g id = "yaxis" className = "axis"/>
+                    <g id = "legend" fontFamily = "sans-serif" fontSize = "10" textAnchor = "end"/>
+                    <g id = "tooltip" className="tooltip" opacity="0" pointerEvents="none">
+                        <text id = "tooltip_value" fontFamily="sans-serif" fontSize="13" fill="black">Hello</text>
+                    </g>
                 </g>
             </svg>
         </React.Fragment>
