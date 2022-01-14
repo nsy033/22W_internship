@@ -36,16 +36,19 @@ for i in np.arange(0, len(merged_df), 1):
     merged_df.at[i, 'subject_email']=eval(merged_df['subject'][i])['email']
 print("Done")
 
-print("extract dates from merged_df ...")
+print("extract dates and hours from merged_df ...")
 #Extract Date
 merged_df['date']=pd.to_datetime(merged_df['timestamp'], unit='ms').dt.date
+merged_df['hour']=pd.to_datetime(merged_df['timestamp'], unit='ms').dt.hour
 print("Done")
 
-print("count the values for each date, subject_email and datum Type ...")
+print("count the values for each date/hour, subject_email and datum Type ...")
 #Count values
-merged_df = merged_df.groupby(['date', 'subject_email', 'datumType']).count()[['value']].reset_index()
+date_cnt = merged_df.groupby(['date', 'subject_email', 'datumType']).count()[['value']].reset_index()
+hour_cnt = merged_df.groupby(['date', 'hour', 'subject_email', 'datumType']).count()[['value']].reset_index()
 print("Done")
 
 print("save the result as merged_df.csv file ...")
-merged_df.to_csv("merged_df.csv", mode='w')
+date_cnt.to_csv("date_cnt.csv", mode='w')
+hour_cnt.to_csv("hour_cnt.csv", mode='w')
 print("Done")

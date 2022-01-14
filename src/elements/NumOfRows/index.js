@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
-import rowcount_res from './rowcount_res.csv';
+import daily_rowcount_res from './daily_rowcount_res.csv';
 import './index.css';
 
 ////   To get the rowcount_res.csv   ////
@@ -8,10 +8,10 @@ import './index.css';
 // 1. query.py -> get raw data csv file for each indivitual datumtype -> [datumTypeName].csv
 //    -> there should be a folder named 'dataset' which contains [datumTypeName].csv files to proceed to the next step
 //       but I gitignored because of the large file size
-// 2. merge_dataframe.py -> intermediate data process -> merged_df.csv
-// 3. num_of_rows_formatting.py
+// 2. extract_cnt.py -> intermediate data process -> date_cnt.csv
+// 3. daily_rowcount.py
 //    -> format the file in order to use it to make the horizontal staked bar, daily number of rows for each users
-//    -> rowcount_res.csv
+//    -> daily_rowcount_res.csv
 
 function NumOfRows() {
     const svgRef = useRef();
@@ -85,7 +85,7 @@ function NumOfRows() {
     }
 
     useEffect(()=>{
-        d3.csv(rowcount_res).then(function(data) {
+        d3.csv(daily_rowcount_res).then(function(data) {
             var dayset = []
             var dayselect = document.getElementById("dayselect");
             var min_day = ''

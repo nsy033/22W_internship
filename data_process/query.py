@@ -78,7 +78,7 @@ print("query from DB ...  ")
 # you can study the query method here: https://docs.mongodb.com/manual/reference/method/db.collection.find/
 # the type of the resulting query is dict.
 # test_result = collection.find_one(query) # you can use find_one method to test query result.
-all_data = list(collection.find(query)) #  or you can use find method to read all matched results.
+all_data = list(collection.find(query, no_cursor_timeout=True)) #  or you can use find method to read all matched results.
 print("Done")
 # pprint.pprint(test_result, indent=2)
 # with open("wifi_test_result.json", "w") as f:
