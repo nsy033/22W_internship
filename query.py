@@ -22,7 +22,7 @@ collection = db.datum
 query = {
     "$and": [{
         # "datumType": "SURVEY" # MANDATORY; choose one among the below list (see POSSIBLE datumType).
-        "datumType": "NOTIFICATION"
+        "datumType": "WIFI"
     }, {
         "subject.groupName": "EG" # MANDATORY; do not change this line.
     }, {
@@ -93,7 +93,7 @@ print("Done")
 # print("Done")
     
 print("convert to csv ...  ")
-with open("notification.csv", "w") as output_file:
+with open("wifi.csv", "w") as output_file:
     dict_writer = csv.DictWriter(output_file, all_data[0].keys())
     dict_writer.writeheader()
     dict_writer.writerows(all_data)

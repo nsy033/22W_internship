@@ -8,17 +8,21 @@ function NumOfRows() {
     const [data, setData] = useState([]);
     var [loading, setLoading] = useState(true);
     var [ordering, setOrdering] = useState(true);
-    var [day, setDay] = useState(0);
+    var [day, setDay] = useState('');
     var [keycnt, setKeyCnt] = useState(0);
     var [keys, setKeys] = useState([
-        'app_usage', 'battery', 'bluetooth', 'call_log', 'device_event',
-        'media', 'message', 'physical_activity', 'physical_activity_transition', 'survey'].reverse());
+        'app_usage', 'battery', 'bluetooth', 'call_log', 'data_traffic',
+             'device_event', 'fitness', 'installed_app', 'key_log', 'location',
+             'media', 'message', 'notification', 'physical_activity', 'physical_activity_transition',
+             'survey'].reverse());
 
     const margin = {top: 20, right: 20, bottom: 50, left: 200};
     const participant_num = 79;
     const entire_keys = [
-        'app_usage', 'battery', 'bluetooth', 'call_log', 'device_event',
-        'media', 'message', 'physical_activity', 'physical_activity_transition', 'survey'].reverse();
+        'app_usage', 'battery', 'bluetooth', 'call_log', 'data_traffic',
+        'device_event', 'fitness', 'installed_app', 'key_log', 'location',
+        'media', 'message', 'notification', 'physical_activity', 'physical_activity_transition',
+        'survey'].reverse();
 
     var bar_cnt = 0;
 
@@ -27,12 +31,10 @@ function NumOfRows() {
         .paddingInner(0.05)
         .align(0.1);
     var z = d3.scaleOrdinal()
-        .range(["#91BAB6", "#5F9794", "#ECCE74", "#B39A44", "#9BCE86",
-                "#6B9E58", "#F6C087", "#E59243", "#E1EDF6", "#5779A3"]);
-        // .range(["#5779A3", "#E1EDF6", "#E59243", "#F6C087", "#6B9E58",
-        //         "#9BCE86", "#B39A44", "#ECCE74", "#5F9794", "#91BAB6",
-        //         "#D1605E", "#F2A19D", "#77706E", "#B8B0AC", "#C67593",
-        //         "#F1C2D1", "#A87D9F", "#D2B6A8", "#7ECBCB"]);
+        .range(["#5779A3", "#E1EDF6", "#E59243", "#F6C087", "#6B9E58",
+                "#9BCE86", "#B39A44", "#ECCE74", "#5F9794", "#91BAB6",
+                "#D1605E", "#F2A19D", "#77706E", "#B8B0AC", "#C67593",
+                "#F1C2D1", "#A87D9F", "#D2B6A8", "#7ECBCB"].reverse());
 
     const onMouseEnter = (event, datum) => {
         var tooltip = d3.select("#tooltip");
@@ -78,19 +80,29 @@ function NumOfRows() {
             setData(data);
             setLoading(false);
 
+            var dayset = []
             var dayselect = document.getElementById("dayselect");
-            for(var i = 0; i < 7; i++) {
-                var date = new Date(86400000*i + 1637420400000)
+            data.forEach(row => {
+                if (day == '' || new Date(day) > new Date(row['day'])) {
+                    setDay(row['day'])
+                }
+                if (!dayset.includes(row['day'])) dayset.push(row['day'])
+            });
+
+            for(var i = 0; i < dayset.length; i++) {
                 var opt = document.createElement('option');
-                opt.value = i+1;
-                opt.innerHTML = date.toDateString();
-                dayselect.append(date.toDateString(), opt)
+                opt.value = dayset[i];
+                opt.innerHTML = dayset[i];
+                dayselect.append(dayset[i], opt)
             }
         });
     }, [])
 
     useEffect(() => { if (!loading) {
-        var day_data = data.slice(participant_num * (day-1), participant_num * (day));
+        var day_data = data.filter(row => {
+            return row['day'] == day
+        });
+
         var i = 0, j = 0;
         for (i = 0; i < day_data.length; i++) {
             var total = 0;
