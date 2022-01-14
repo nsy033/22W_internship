@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from pymongo import MongoClient
 from bson import json_util
-import json
-import pprint
 import csv
 import sys
 reload(sys)
@@ -22,7 +20,7 @@ collection = db.datum
 query = {
     "$and": [{
         # "datumType": "SURVEY" # MANDATORY; choose one among the below list (see POSSIBLE datumType).
-        "datumType": "WIFI"
+        "datumType": "EMBEDDED_SENSOR"
     }, {
         "subject.groupName": "EG" # MANDATORY; do not change this line.
     }, {
@@ -61,8 +59,8 @@ BATTERY = 4;
 BLUETOOTH = 5;
 CALL_LOG = 6;
 DEVICE_EVENT = 7;
-# EMBEDDED_SENSOR = 8;
-# EXTERNAL_SENSOR = 9;
+EMBEDDED_SENSOR = 8;
+EXTERNAL_SENSOR = 9;
 INSTALLED_APP = 10;
 KEY_LOG = 11;
 LOCATION = 12;
@@ -93,7 +91,7 @@ print("Done")
 # print("Done")
     
 print("convert to csv ...  ")
-with open("wifi.csv", "w") as output_file:
+with open("embedded_sensor.csv", "w") as output_file:
     dict_writer = csv.DictWriter(output_file, all_data[0].keys())
     dict_writer.writeheader()
     dict_writer.writerows(all_data)

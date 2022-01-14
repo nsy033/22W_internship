@@ -3,6 +3,16 @@ import * as d3 from 'd3';
 import rowcount_res from './rowcount_res.csv';
 import './index.css';
 
+////   To get the rowcount_res.csv   ////
+// 0. check the folder named 'data_process'
+// 1. query.py -> get raw data csv file for each indivitual datumtype -> [datumTypeName].csv
+//    -> there should be a folder named 'dataset' which contains [datumTypeName].csv files to proceed to the next step
+//       but I gitignored because of the large file size
+// 2. merge_dataframe.py -> intermediate data process -> merged_df.csv
+// 3. num_of_rows_formatting.py
+//    -> format the file in order to use it to make the horizontal staked bar, daily number of rows for each users
+//    -> rowcount_res.csv
+
 function NumOfRows() {
     const svgRef = useRef();
     const [data, setData] = useState([]);
@@ -12,17 +22,16 @@ function NumOfRows() {
     var [keycnt, setKeyCnt] = useState(0);
     var [keys, setKeys] = useState([
         'app_usage', 'battery', 'bluetooth', 'call_log', 'data_traffic',
-             'device_event', 'fitness', 'installed_app', 'key_log', 'location',
-             'media', 'message', 'notification', 'physical_activity', 'physical_activity_transition',
-             'survey'].reverse());
+        'device_event', 'external_sensor', 'fitness', 'installed_app', 'key_log',
+        'location', 'media', 'message', 'notification', 'physical_activity',
+        'physical_activity_transition', 'survey', 'wifi'].reverse());
 
     const margin = {top: 20, right: 20, bottom: 50, left: 200};
-    const participant_num = 79;
     const entire_keys = [
         'app_usage', 'battery', 'bluetooth', 'call_log', 'data_traffic',
-        'device_event', 'fitness', 'installed_app', 'key_log', 'location',
-        'media', 'message', 'notification', 'physical_activity', 'physical_activity_transition',
-        'survey'].reverse();
+        'device_event', 'external_sensor', 'fitness', 'installed_app', 'key_log',
+        'location', 'media', 'message', 'notification', 'physical_activity',
+        'physical_activity_transition', 'survey', 'wifi'].reverse();
 
     var bar_cnt = 0;
 
@@ -77,14 +86,12 @@ function NumOfRows() {
 
     useEffect(()=>{
         d3.csv(rowcount_res).then(function(data) {
-            setData(data);
-            setLoading(false);
-
             var dayset = []
             var dayselect = document.getElementById("dayselect");
+            var min_day = ''
             data.forEach(row => {
-                if (day == '' || new Date(day) > new Date(row['day'])) {
-                    setDay(row['day'])
+                if (min_day == '' || Date(min_day) > Date(row['day'])) {
+                    min_day = row['day']
                 }
                 if (!dayset.includes(row['day'])) dayset.push(row['day'])
             });
@@ -95,6 +102,10 @@ function NumOfRows() {
                 opt.innerHTML = dayset[i];
                 dayselect.append(dayset[i], opt)
             }
+
+            setData(data);
+            setLoading(false);
+            setDay(min_day);
         });
     }, [])
 
@@ -126,8 +137,37 @@ function NumOfRows() {
         var g = svg.select("#svg_frame").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
         svg.select("#svg_frame").selectAll(".appended").remove()
 
-        x.rangeRound([0, width]);
+        // define the line
+        var valueline = d3.line()
+            .x(function(d) { return x(d.total); })
+            .y(function(d) { return y(d.email); });
+        // gridlines in x axis function
+        function make_x_gridlines() {		
+            return d3.axisBottom(x)
+                .ticks(5)
+        }
+        // gridlines in y axis function
+        function make_y_gridlines() {		
+            return d3.axisLeft(y)
+                .ticks(5)
+        }
+
+
+        x.rangeRound([0, width-200]);
         y.rangeRound([0, height]);
+
+        g.select("#xgrid")
+        .attr("transform", "translate(0," + height + ")")
+            .call(make_x_gridlines()
+                .tickSize(-height)
+                .tickFormat("")
+            ).style("color", "rgb(187 189 201)")
+
+        // g.select("#ygrid")
+        //     .call(make_y_gridlines()
+        //     .tickSize(-width)
+        //     .tickFormat("")
+        // )
 
         g.select("#chart")
             .selectAll("g")
@@ -186,11 +226,15 @@ function NumOfRows() {
             .on('click', (event, datum) => onMouseClick(event, datum));
 
         legend.append("text").attr("class", "appended")
+            .attr("text-overflow", "ellipsis")
             .attr("x", width - 24)
             .attr("y", 9.5)
             .attr("dy", "0.32em")
             .attr("id", (d) => {return ""+d})
-            .text(function(d) { return d; })
+            .text(function(d) { 
+                if(d=='physical_activity_transition') return "phys act trans".toUpperCase()
+                else return d.replace("_", " ").toUpperCase();
+            })
             .style("font-size", "13px")
             .on('click', (event, datum) => onMouseClick(event, datum));
     }}, [loading, keycnt, ordering, day]);
@@ -224,8 +268,10 @@ function NumOfRows() {
             </div>
             {!loading &&
                 <>
-                <svg ref = {svgRef} width="1200" height="1820">
+                <svg ref = {svgRef} width="1300" height="1820">
                     <g id = "svg_frame">
+                        <g id = "xgrid" className = "grid"/>
+                        <g id = "ygrid" className = "grid"/>
                         <g id = "chart"/>
                         <g id = "xaxis_t" className = "axis"/>
                         <g id = "xaxis_b" className = "axis"/>

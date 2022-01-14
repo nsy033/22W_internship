@@ -6,17 +6,17 @@ merged_df = pd.read_csv('./merged_df.csv')
 print("Done")
 
 datumType = ['APP_USAGE_EVENT', 'BATTERY', 'BLUETOOTH', 'CALL_LOG', 'DATA_TRAFFIC',
-             'DEVICE_EVENT', 'FITNESS', 'INSTALLED_APP', 'KEY_LOG', 'LOCATION',
-             'MEDIA', 'MESSAGE', 'NOTIFICATION', 'PHYSICAL_ACTIVITY', 'PHYSICAL_ACTIVITY_TRANSITION',
-             'SURVEY']
+             'DEVICE_EVENT', 'FITNESS', 'EXTERNAL_SENSOR', 'INSTALLED_APP', 'KEY_LOG',
+             'LOCATION', 'MEDIA', 'MESSAGE', 'NOTIFICATION', 'PHYSICAL_ACTIVITY',
+             'PHYSICAL_ACTIVITY_TRANSITION', 'SURVEY', 'WIFI']
 
 f = open('rowcount_res.csv','w')
 wr = csv.writer(f)
 wr.writerow(['email', 'day',
              'app_usage', 'battery', 'bluetooth', 'call_log', 'data_traffic',
-             'device_event', 'fitness', 'installed_app', 'key_log', 'location',
-             'media', 'message', 'notification', 'physical_activity', 'physical_activity_transition',
-             'survey'])
+             'device_event', 'fitness', 'external_sensor', 'installed_app', 'key_log',
+             'location', 'media', 'message', 'notification', 'physical_activity',
+             'physical_activity_transition', 'survey', 'wifi'])
 
 dates = merged_df['date'].unique()
 for date in dates:
