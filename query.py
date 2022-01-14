@@ -3,6 +3,10 @@ from pymongo import MongoClient
 from bson import json_util
 import json
 import pprint
+import csv
+import sys
+reload(sys)
+sys.setdefaultencoding("UTF-8")
 
 user_id = "abcreader"
 password = "abcreader"
@@ -18,14 +22,15 @@ collection = db.datum
 query = {
     "$and": [{
         # "datumType": "SURVEY" # MANDATORY; choose one among the below list (see POSSIBLE datumType).
-        "datumType": "INSTALLED_APP"
+        "datumType": "NOTIFICATION"
     }, {
         "subject.groupName": "EG" # MANDATORY; do not change this line.
     }, {
         # "subject.email": "iclab.drm1@kse.kaist.ac.kr" # iclab.drm###@kse.kaist.ac.kr (###: 1 ~ 135)
         # exclude this condition if you want to get data from all subjects. (don't need to specify one subject)
     }, {
-        "timestamp": { "$exists": "true" } # MANDATORY; if you want to read the data for all time.
+        # "timestamp": { "$exists": "true" } # MANDATORY; if you want to read the data for all time.
+        
         ### other examples ###
         # 1)
         # "timestamp": { "$gt": 1637506800000 } # "$gt" means "greater than". 
@@ -40,7 +45,7 @@ query = {
         # you can use the conditions twice, e.g., {"timestamp": {"$gt": 0}}, {"timestamp": {"$lt": 5}}
         # you can convert the local time to timestamp (and vice versa) via here: https://www.epochconverter.com/
         # you need to use local time 00:00 ~ 23:59 to read daily results.
-    }, {
+    }, {"timestamp": {"$gt": 1637420400000}}, {"timestamp": {"$lt": 1638025200000}}, {
         # "value.responseTime": { "$gt": 0 }  
         # exclude this condition if you read other datumType.
         # use this condition only for querying SURVEY data.
@@ -49,40 +54,50 @@ query = {
 
 ### POSSIBLE datumType ###
 """
-# PHYSICAL_ACTIVITY_TRANSITION = 1;
+PHYSICAL_ACTIVITY_TRANSITION = 1;
 PHYSICAL_ACTIVITY = 2;
 APP_USAGE_EVENT = 3;
 BATTERY = 4;
 BLUETOOTH = 5;
 CALL_LOG = 6;
 DEVICE_EVENT = 7;
-EMBEDDED_SENSOR = 8;
-EXTERNAL_SENSOR = 9;
-# INSTALLED_APP = 10;
+# EMBEDDED_SENSOR = 8;
+# EXTERNAL_SENSOR = 9;
+INSTALLED_APP = 10;
 KEY_LOG = 11;
-# LOCATION = 12;
-# MEDIA = 13;
-# MESSAGE = 14;
+LOCATION = 12;
+MEDIA = 13;
+MESSAGE = 14;
 NOTIFICATION = 15;
-# FITNESS = 16;
-# SURVEY = 17;
+FITNESS = 16;
+SURVEY = 17;
 DATA_TRAFFIC = 18;
-# WIFI = 19;
+WIFI = 19;
 """
 
 
+print("query from DB ...  ")
 # you can study the query method here: https://docs.mongodb.com/manual/reference/method/db.collection.find/
 # the type of the resulting query is dict.
 # test_result = collection.find_one(query) # you can use find_one method to test query result.
 all_data = list(collection.find(query)) #  or you can use find method to read all matched results.
-
+print("Done")
 # pprint.pprint(test_result, indent=2)
 # with open("wifi_test_result.json", "w") as f:
 #   json.dump(test_result, f, indent=2, default=json_util.default)
 
-# pprint.pprint(all_data, indent=2)
-with open("installed_app.json", "w") as f:
-  json.dump(all_data, f, indent=2, default=json_util.default)
+# import and save the data from DB firstly as json file
+# print("import as json ...  ")
+# with open("call_log.json", "w") as f:
+#   json.dump(all_data, f, indent=2, default=json_util.default, ensure_ascii=False)
+# print("Done")
+    
+print("convert to csv ...  ")
+with open("notification.csv", "w") as output_file:
+    dict_writer = csv.DictWriter(output_file, all_data[0].keys())
+    dict_writer.writeheader()
+    dict_writer.writerows(all_data)
+print("Done")
 
 # the below example is one row of SURVEY data.
 """
