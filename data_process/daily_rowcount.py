@@ -18,9 +18,9 @@ wr.writerow(['email', 'day',
              'location', 'media', 'message', 'notification', 'physical_activity',
              'physical_activity_transition', 'survey', 'wifi'])
 
-dates = date_cnt['date'].unique()
+dates = date_cnt['time'].unique()
 for date in dates:
-    date_data = date_cnt[date_cnt['date'] == date]
+    date_data = date_cnt[date_cnt['time'] == date]
     # print(date_data)
     for user_num in range(1, 80):
         email_addr = 'iclab.drm' + str(user_num) + '@kse.kaist.ac.kr'

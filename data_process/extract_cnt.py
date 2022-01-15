@@ -36,19 +36,31 @@ for i in np.arange(0, len(merged_df), 1):
     merged_df.at[i, 'subject_email']=eval(merged_df['subject'][i])['email']
 print("Done")
 
-print("extract dates and hours from merged_df ...")
-#Extract Date
-merged_df['date']=pd.to_datetime(merged_df['timestamp'], unit='ms').dt.date
-merged_df['hour']=pd.to_datetime(merged_df['timestamp'], unit='ms').dt.hour
+print("extract timestamps from merged_df ...")
+#Extract Minute
+merged_df['minute']=pd.to_datetime(merged_df['timestamp'], unit='ms').dt.strftime('%y-%m-%d %H:%M')
 print("Done")
 
-print("count the values for each date/hour, subject_email and datum Type ...")
+print("count the values for each minute, subject_email and datum Type ...")
 #Count values
-date_cnt = merged_df.groupby(['date', 'subject_email', 'datumType']).count()[['value']].reset_index()
-hour_cnt = merged_df.groupby(['date', 'hour', 'subject_email', 'datumType']).count()[['value']].reset_index()
+minute_cnt = merged_df.groupby(['minute', 'subject_email', 'datumType']).count()[['value']].reset_index()
+# print(minute_cnt)
 print("Done")
 
-print("save the result as merged_df.csv file ...")
+print("count the values for each hour, subject_email and datum Type ...")
+minute_cnt['hour']=pd.to_datetime(minute_cnt['minute']).dt.strftime('%y-%m-%d %H')
+hour_cnt = minute_cnt.groupby(['hour', 'subject_email', 'datumType']).count()[['value']].reset_index()
+# print(hour_cnt)
+print("Done")
+
+print("count the values for each date, subject_email and datum Type ...")
+minute_cnt['date']=pd.to_datetime(minute_cnt['minute']).dt.strftime('%y-%m-%d')
+date_cnt = minute_cnt.groupby(['date', 'subject_email', 'datumType']).count()[['value']].reset_index()
+# print(date_cnt)
+print("Done")
+
+print("save the result as [date/hour/minute]_cnt.csv files each ...")
 date_cnt.to_csv("date_cnt.csv", mode='w')
 hour_cnt.to_csv("hour_cnt.csv", mode='w')
+minute_cnt.to_csv("minute_cnt.csv", mode='w')
 print("Done")
