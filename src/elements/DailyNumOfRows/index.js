@@ -270,6 +270,7 @@ function DailyNumOfRows() {
                     </g>
                 </div>
             </div>
+            {loading && <h2>Loding ...</h2>}
             {!loading &&
                 <>
                 <svg ref = {svgRef} width="1300" height="1820">
