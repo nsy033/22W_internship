@@ -4,6 +4,8 @@ import date_cnt from './date_cnt.csv';
 import hour_cnt from './hour_cnt.csv';
 import minute_cnt from './minute_cnt.csv';
 import './index.css';
+import { styled } from '@mui/styles';
+import * as mui from '@mui/material';
 
 function IndivNumOfRows() {
     // constants
@@ -14,11 +16,11 @@ function IndivNumOfRows() {
     const margin = {
         top: 10,
         right: 40,
-        left: 180,
-        bottom: 10,
+        left: 200,
+        bottom: 15,
     };
     const width = 1200;
-    const height = 170;
+    const height = 100;
     const yTicks = 3;
     const datumType = ['APP_USAGE_EVENT', 'BATTERY', 'BLUETOOTH', 'CALL_LOG', 'DATA_TRAFFIC',
         'DEVICE_EVENT', 'FITNESS', 'EXTERNAL_SENSOR', 'INSTALLED_APP', 'KEY_LOG',
@@ -28,15 +30,67 @@ function IndivNumOfRows() {
         "#6B9E58", "#9BCE86", "#B39A44", "#ECCE74", "#5F9794", 
         "#91BAB6", "#D1605E", "#F2A19D", "#77706E", "#B8B0AC", 
         "#C67593", "#F1C2D1", "#A87D9F", "#D2B6A8", "#7ECBCB"];
+    const MyRadio = styled(mui.RadioGroup)({
+        marginRight: '20px',
+    });
+    const date_formatter = (raw_date) => {
+        let month = raw_date.getMonth() + 1;
+        let day = raw_date.getDate();
+        let hour = raw_date.getHours();
+        let minute = raw_date.getMinutes();
+
+        month = month >= 10 ? month : '0' + month;
+        day = day >= 10 ? day : '0' + day;
+        hour = hour >= 10 ? hour : '0' + hour;
+        minute = minute >= 10 ? minute : '0' + minute;
+
+        return raw_date.getFullYear() + '/' + month + '/' + day + ' ' + hour + ':' + minute;
+    }
 
     // handlers
     const handleAggrDate = () => { setAggr("1"); }
     const handleAggrHour = () => { setAggr("0"); }
     const handleAggrMin = () => { setAggr("-1"); }
-    const handleDate = () => {
-        setDay(document.getElementById("dayselect").selectedOptions[0].value);
-        console.log(document.getElementById("dayselect").selectedOptions[0].value);
+    const handleDate = (event) => {
+        setDay(event.target.value);
     }
+    const handleRange = (event, newValue) => {
+        setRange(newValue);
+        const start = new Date(newValue[0]);
+        const format_start = date_formatter(start);
+        const end = new Date(newValue[1]);
+        const format_end = date_formatter(end);
+        setPeriod(format_start + ' ~ ' + format_end);
+    };
+    const handleRangeBtn = () => {
+        setRangeBtnCnt((rangebtncnt) => rangebtncnt + 1);
+    };
+    const handleTooltipShow = (event, datum) => {
+        var selected_circle = document.getElementById(event.target.id);
+        selected_circle.setAttribute("r", 10);
+        event.target.style = 'opacity: 0.6';
+
+        var tmp_text = datum.value + ' row(s) of ';
+        var type_name = datum.datumType
+        if (type_name == 'PHYSICAL_ACTIVITY_TRANSITION') type_name = 'PHYS_ACT_TRANS'
+        else if (type_name == 'APP_USAGE_EVENT') type_name = 'APP_USAGE'
+        tmp_text += type_name.replaceAll('_', ' ') + ' at ';
+
+        var date;
+        if (aggr == '1') date = new Date(datum.date);
+        else if( aggr == '0') date = new Date(datum.hour);
+        else date = new Date(datum.minute);
+        const formate_date = date_formatter(date);
+        tmp_text += formate_date;
+
+        setTooltip(tmp_text)
+    }
+    const handleTooltipHide = (event, datum) => {
+        var selected_circle = document.getElementById(event.target.id);
+        selected_circle.setAttribute("r", 3);
+        setTooltip('')
+    }
+
 
     // usestate
     const svgRef = useRef();
@@ -48,31 +102,25 @@ function IndivNumOfRows() {
     const [Hloading, setHLoading] = useState(true);
     const [Mloading, setMLoading] = useState(true);
     const [day, setDay] = useState('');
+    var [range, setRange] = useState([0, 0]);
+    var [rangebtncnt, setRangeBtnCnt] = useState(0);
+    var [period, setPeriod] = useState('');
+    var [min_minute, setMinMin] = useState(-1);
+    var [max_minute, setMaxMin] = useState(-1);
+    var [tooltip_text, setTooltip] = useState('');
 
     // useeffect
     useEffect(()=>{
         // loading data from csv
         d3.csv(date_cnt).then(function(data) {
-            var dayset = []
-            var dayselect = document.getElementById("dayselect");
             var min_day = ''
             data.forEach(row => {
                 const d_split = row.date.split('-');
-                const this_date = String(new Date(Number(d_split[2]) + 2000, d_split[1], d_split[0]))
-                if (min_day == '' || Date(min_day) > Date(this_date)) {
+                const this_date = new Date(Number(d_split[2]) + 2000, d_split[1], d_split[0])
+                if (min_day == '' || Date(min_day) > this_date) {
                     min_day = this_date
                 }
-                if (!dayset.includes(this_date)) dayset.push(this_date)
             });
-
-            for(var i = 0; i < dayset.length; i++) {
-                var opt = document.createElement('option');
-                const this_date = new Date(dayset[i]);
-                const format_date = this_date.getFullYear()+'-'+this_date.getMonth()+'-'+this_date.getDate();
-                opt.value = dayset[i];
-                opt.innerHTML = format_date;
-                dayselect.append(dayset[i], opt)
-            }
 
             data = data.filter(function(row) {
                 return row.subject_email == email_addr;
@@ -103,16 +151,30 @@ function IndivNumOfRows() {
         });
 
         d3.csv(minute_cnt).then(function(data) {
-            data = data.filter(function(row){
-                return row.subject_email == email_addr;
-            });
+            var tmp_min = Infinity;
+            var tmp_max = -1;
             data.forEach(d => {
                 const d_split = d.minute.split('-');
                 const h_split = d_split[2].split(' ');
                 const m_split = h_split[1].split(':');
                 d.value = +d.value;
                 d.minute = new Date(Number(d_split[0]) + 2000, d_split[1], h_split[0], m_split[0], m_split[1]);
+                if (d.minute.getTime() < tmp_min) tmp_min = d.minute.getTime()
+                if (d.minute.getTime() > tmp_max) tmp_max = d.minute.getTime()
             });
+            data = data.filter(function(row){
+                return row.subject_email == email_addr;
+            });
+
+            const start = new Date(tmp_min);
+            const format_start = date_formatter(start);
+            const end = new Date(tmp_max);
+            const format_end = date_formatter(end);
+            setPeriod(format_start + ' ~ ' + format_end);
+
+            setMinMin(tmp_min);
+            setMaxMin(tmp_max);
+            setRange([tmp_min, tmp_max]);
             setMData(data);
             setMLoading(false);
         });
@@ -127,11 +189,25 @@ function IndivNumOfRows() {
         var xValue, yValue
         var aggr_num = Number(aggr)
         var data
-
         yValue = d => d.value;
-        if (aggr_num > 0) {xValue = d => d.date; data = date_data}
-        else if (aggr_num == 0) {xValue = d => d.hour; data = hour_data}
-        else {xValue = d => d.minute; data = minute_data}
+        if (aggr_num > 0) {
+            xValue = d => d.date;
+            data = date_data.filter(function(row) {
+                return row.date >= range[0] && row.date <= range[1];
+            });
+        }
+        else if (aggr_num == 0) {
+            xValue = d => d.hour;
+            data = hour_data.filter(function(row) {
+                return row.hour >= range[0] && row.hour <= range[1];
+            });
+        }
+        else {
+            xValue = d => d.minute;
+            data = minute_data.filter(function(row) {
+                return row.minute >= range[0] && row.minute <= range[1];
+            });
+            }
         
         const xScale = d3.scaleTime()
             .domain(d3.extent(data, xValue))
@@ -156,10 +232,10 @@ function IndivNumOfRows() {
                 .append('text').attr("class", "appended")
                 .attr('class', 'axis-label')
                 .attr('y', height / 2)
-                .attr('x', -50)
+                .attr('x', -185)
                 .attr('fill', 'black')
                 // .attr('transform', `rotate(-90)`)
-                .attr('text-anchor', `end`)
+                .attr('text-anchor', `start`)
                 .style('font-weight', 'bold')
                 .text(() => {
                     if (datumType[i] == 'PHYSICAL_ACTIVITY_TRANSITION') return 'PHYS ACT TRANS';
@@ -168,8 +244,8 @@ function IndivNumOfRows() {
                 );
 
             var xAixs
-            if (i == datumType.length - 1) xAixs = d3.axisBottom(xScale).ticks(10).tickSize(-innerHeight).tickPadding(15);
-            else xAixs = d3.axisBottom(xScale).ticks(10).tickSize(-innerHeight).tickPadding(15).tickFormat('');
+            if (i == datumType.length - 1) xAixs = d3.axisBottom(xScale).ticks(5).tickSize(-innerHeight).tickPadding(25);
+            else xAixs = d3.axisBottom(xScale).ticks(10).tickSize(-innerHeight).tickPadding(25).tickFormat('');
             const xAxisG = g
                 .append('g').attr("class", "appended")
                 .call(xAixs)
@@ -194,48 +270,89 @@ function IndivNumOfRows() {
                 .attr("class", "appended")
                 .attr('id', 'line-path')
                 .attr('stroke', colors[i])
-                .attr('stroke-width', '2.5')
-                .attr('d', lineGenerator(tydata));
+                .attr('stroke-width', '3')
+                .attr('d', lineGenerator(tydata))
             
-            svg.append('hr').attr('width', width)
+            var circle_cnt = 0;
+            g.selectAll('circle')
+                .data(tydata)
+                .enter().append('circle')
+                .attr("class", "appended")
+                .attr('id', () => {
+                    circle_cnt++;
+                    return 'data-circle'+circle_cnt;}
+                )
+                .attr('r', 3)
+                .attr('cx', function(d) { return xScale(xValue(d)); })
+                .attr('cy', function(d) { return yScale(yValue(d)); })
+                .attr('fill', function (d) { return colors[i]; })
+                .on('mouseenter', (event, datum) => handleTooltipShow(event, datum))
+                .on('mouseleave', (event, datum) => handleTooltipHide(event, datum));
+            
+            svg.append('path').attr('width', width)
+                .attr('stroke', 'grey')
+                .attr('stroke-width', '0.5')
+                .attr('d', 'M0 '+((i+1)*height - 2)+' L'+width+' '+((i+1)*height - 2))
         }
-    }}, [Dloading, Hloading, Mloading, aggr]);
+    }}, [Dloading, Hloading, Mloading, aggr, min_minute, max_minute, rangebtncnt]);
     
     // render
     return (
         <div className="fragment">
-            <div className="title">
+            <div className="title" style ={{width: '1200px', textAlign: 'center'}}>
                 <h1>One User's Count of Rows along Time</h1>
-                <h3>{email_addr}</h3>
-                <div>
-                    <text>Select specific date you want to explore </text>
-                    <select id="dayselect" onChange={handleDate}>
-                    </select>
-                </div>
-                <div>
-                    <g onClick={handleAggrDate}>
-                        <input id="date_aggr" value="1" type="radio" checked={aggr == '1'} onChange={handleAggrDate}></input>
-                        <text>Daily</text>
-                    </g>
-                    <g onClick={handleAggrHour}>
-                        <input id="hour_aggr" value="0" type="radio" checked={aggr == '0'} onChange={handleAggrHour}></input>
-                        <text>Hourly</text>
-                    </g>
-                    <g onClick={handleAggrMin}>
-                        <input id="min_aggr" value="-1" type="radio" checked={aggr == '-1'} onChange={handleAggrMin}></input>
-                        <text>Minute </text>
-                    </g>
-                    <text> based aggregation</text>
+                
+                <mui.FormControl component="fieldset">
+                    <mui.FormLabel component="legend">Aggregation Base</mui.FormLabel>
+                    <MyRadio row aria-label="aggregation" name="row-radio-buttons-group">
+                        <mui.FormControlLabel value="date_aggr" control={<mui.Radio />} checked={aggr == '1'} onChange={handleAggrDate} label="Daily" />
+                        <mui.FormControlLabel value="hour_aggr" control={<mui.Radio />} checked={aggr == '0'} onChange={handleAggrHour} label="Hourly" />
+                        <mui.FormControlLabel value="min_aggr" control={<mui.Radio />} checked={aggr == '-1'} onChange={handleAggrMin} label="Minute" />
+                    </MyRadio>
+                </mui.FormControl>
+
+                <mui.FormControl sx={{ width: 300 }}>
+                    <mui.Slider
+                        min={min_minute}
+                        max={max_minute}
+                        getAriaLabel={() => 'Period'}
+                        value={range}
+                        onChange={handleRange}
+                        valueLabelFormat= {(value) => {
+                            const this_date = new Date(value);
+                            const format_date = date_formatter(this_date);
+                            return format_date;}}
+                        valueLabelDisplay="auto"
+                    />
+                    <mui.Button size="small" variant="text" onClick={handleRangeBtn}>Apply_Period_Setting</mui.Button>
+                </mui.FormControl>
+
+                <mui.FormControl style ={{width: '450px'}}>
+                    <mui.FormLabel>Current Focused Period</mui.FormLabel>
+                    <mui.FormLabel>{period}</mui.FormLabel>
+                </mui.FormControl>
+                
+                <div style ={{textAlign: 'right', marginRight: '100px', marginTop: '12px', marginBottom: '-10px', fontSize: '16px', color: '#4b4950'}}>
+                    <text style ={{fontWeight: 'bold'}}>Email: </text>
+                    <text>{email_addr}</text>
                 </div>
             </div>
         {(Dloading || Hloading || Mloading) &&
-            <h2>Loading ...</h2>
+        <mui.Backdrop
+            sx={{ color: '#ffffff'}}
+            open= {true}
+        >
+            <mui.CircularProgress color="inherit" />
+        </mui.Backdrop>
         }
         {!(Dloading || Hloading || Mloading) &&
             <>
             <svg ref = {svgRef} width={width} height={height * 19}>
+
+                <mui.Tooltip title={tooltip_text} enterDelay={100} leaveDelay={500} followCursor arrow>
                 <g id = "svg_frame">
                 </g>
+                </mui.Tooltip>
             </svg>
             </>
         }

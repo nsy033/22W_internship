@@ -17,7 +17,7 @@ import * as mui from '@mui/material';
 
 function DailyNumOfRows() {
     // constants
-    const margin = {top: 20, right: 20, bottom: 50, left: 200};
+    const margin = {top: 20, right: 20, bottom: 50, left: 230};
     const entire_keys = [
         'app_usage', 'battery', 'bluetooth', 'call_log', 'data_traffic',
         'device_event', 'external_sensor', 'fitness', 'installed_app', 'key_log',
@@ -305,7 +305,7 @@ function DailyNumOfRows() {
     // render
     return (
         <div className="fragment">
-            <div className="title">
+            <div className="title" style ={{width: '1300px', textAlign: 'center', marginLeft: '-80px'}}>
                 <h1>Daily Row Counts of Users</h1>
 
                 <mui.FormControl component="fieldset">
@@ -368,7 +368,7 @@ function DailyNumOfRows() {
                         value={range}
                         onChange={handleRange}
                         getAriaValueText= {(value) => {return String(value)}}
-                        aria-labelledby="non-linear-slider"
+                        valueLabelDisplay="auto"
                     />
                     <mui.Button size="small" variant="text" onClick={handleRangeBtn}>Apply_Range_Setting</mui.Button>
                 </mui.FormControl>
@@ -380,7 +380,7 @@ function DailyNumOfRows() {
                     <g id = "svg_frame">
                         <g id = "xgrid" className = "grid"/>
                         <g id = "ygrid" className = "grid"/>
-                        <mui.Tooltip title={tooltip_text} enterDelay={200} followCursor arrow>
+                        <mui.Tooltip title={tooltip_text} enterDelay={100} followCursor arrow>
                         <g id = "chart"/>
                         </mui.Tooltip>
                         <g id = "xaxis_t" className = "axis"/>
