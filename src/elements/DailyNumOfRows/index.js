@@ -2,6 +2,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
 import daily_rowcount_res from './daily_rowcount_res.csv';
 import './index.css';
+import { styled } from '@mui/styles';
+import * as mui from '@mui/material';
 
 ////   To get the rowcount_res.csv   ////
 // 0. check the folder named 'data_process'
@@ -20,7 +22,29 @@ function DailyNumOfRows() {
         'app_usage', 'battery', 'bluetooth', 'call_log', 'data_traffic',
         'device_event', 'external_sensor', 'fitness', 'installed_app', 'key_log',
         'location', 'media', 'message', 'notification', 'physical_activity',
-        'physical_activity_transition', 'survey', 'wifi'].reverse();
+        'physical_activity_transition', 'survey', 'wifi'];
+    const MyRadio = styled(mui.RadioGroup)({
+        marginRight: '20px',
+    });
+    const MySelect = styled(mui.Select)({
+        marginRight: '40px',
+        width: '150px'
+    });
+    
+    const ITEM_HEIGHT = 48;
+    const ITEM_PADDING_TOP = 8;
+    const MenuProps = {
+        PaperProps: {
+            style: {
+            maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+            width: 250,
+            },
+        },
+    };
+    const color_set = ["#5779A3", "#E1EDF6", "#E59243", "#F6C087", "#6B9E58",
+                        "#9BCE86", "#B39A44", "#ECCE74", "#5F9794", "#91BAB6",
+                        "#D1605E", "#F2A19D", "#77706E", "#B8B0AC", "#C67593",
+                        "#F1C2D1", "#A87D9F", "#D2B6A8"]
 
     // variables
     var bar_cnt = 0;
@@ -29,10 +53,7 @@ function DailyNumOfRows() {
         .paddingInner(0.05)
         .align(0.1);
     var z = d3.scaleOrdinal()
-        .range(["#5779A3", "#E1EDF6", "#E59243", "#F6C087", "#6B9E58",
-                "#9BCE86", "#B39A44", "#ECCE74", "#5F9794", "#91BAB6",
-                "#D1605E", "#F2A19D", "#77706E", "#B8B0AC", "#C67593",
-                "#F1C2D1", "#A87D9F", "#D2B6A8", "#7ECBCB"].reverse());
+        .range(color_set);
 
     // event handlers
     const handleToAscending = () => {
@@ -41,23 +62,23 @@ function DailyNumOfRows() {
     const handleToDescending = () => {
         setOrdering(false)
     }
-    const handleDate = () => {
-        setDay(document.getElementById("dayselect").selectedOptions[0].value);
+    const handleDate = (event) => {
+        setDay(event.target.value);
+        setRangeBtnCnt(0);
+        setRange([0, 0]);
     }
     const handleTooltipShow = (event, datum) => {
-        var tooltip = d3.select("#tooltip");
-        tooltip.select("#tooltip_value")
-            .attr("x", x((datum[1]+datum[0])/2))
-            .attr("y", y(datum.data.email) + y.bandwidth())
-            .attr("transform", "translate(0, -" + y.bandwidth()/4 + ")")
-            .text(datum[1] - datum[0]);
+        var tmp_text = datum.data.email + ': \n' + String(datum[1] - datum[0]);
+        tmp_text = tmp_text + ' row(s) of ';
+        const bar_color = event.toElement.parentNode.attributes.fill.nodeValue;
+        var type_name = entire_keys[color_set.indexOf(bar_color)]
+        if (type_name == 'physical_activity_transition') type_name = 'PHYS_ACT_TRANS'
+        tmp_text += type_name.replaceAll('_', ' ').toUpperCase();
+        setTooltip(tmp_text)
         var selected_bar = document.getElementById(event.toElement.id);
         selected_bar.style = 'opacity: 0.6';
-        tooltip.style("opacity", 1);
     }
     const handleTooltipHide = (event, datum) => {
-        var tooltip = d3.select("#tooltip");
-        tooltip.style("opacity", 0);
         var selected_bar = document.getElementById(event.fromElement.id);
         selected_bar.style = 'opacity: 1';
     }
@@ -78,48 +99,68 @@ function DailyNumOfRows() {
             setKeys([
                 ...keys,
                 selected_legend.id
-              ].sort().reverse());
+              ].sort());
+            setKeyCnt(cnt => cnt + 1)
+        }
+    }
+    const handleDatumSelect = (event) => {
+        var selected_type = event.target.value;
+        if (keys.includes(selected_type)) {
+            setKeys([
+                ...keys.filter(item => item !== selected_type)
+              ]);
+            setKeyCnt(cnt => cnt + 1)
+        }
+        else {
+            setKeys([
+                ...keys,
+                selected_type
+              ].sort());
             setKeyCnt(cnt => cnt + 1)
         }
     }
     const handleEmail = (event, datum) => {
-        console.log(datum.split('drm')[1].split('@')[0]);
+        // console.log(datum.split('drm')[1].split('@')[0]);
         window.open(window.document.URL + 'indiv/' + String(datum.split('drm')[1].split('@')[0]))
     }
+    const handleRange = (event, newValue) => {
+        setRange(newValue);
+    };
+    const handleRangeBtn = () => {
+        setRangeBtnCnt((rangebtncnt) => rangebtncnt + 1);
+    };
 
     // usestate
     const svgRef = useRef();
     const [data, setData] = useState([]);
+    var [dayset, setDaySet] = useState([]);
     var [loading, setLoading] = useState(true);
     var [ordering, setOrdering] = useState(true);
     var [day, setDay] = useState('');
+    var [range, setRange] = useState([0, 0]);
+    var [max_total, setMaxTotal] = useState(0);
+    var [rangebtncnt, setRangeBtnCnt] = useState(0);
+    var [tooltip_text, setTooltip] = useState('');
     var [keycnt, setKeyCnt] = useState(0);
     var [keys, setKeys] = useState([
         'app_usage', 'battery', 'bluetooth', 'call_log', 'data_traffic',
         'device_event', 'external_sensor', 'fitness', 'installed_app', 'key_log',
         'location', 'media', 'message', 'notification', 'physical_activity',
-        'physical_activity_transition', 'survey', 'wifi'].reverse());
+        'physical_activity_transition', 'survey', 'wifi']);
 
     // useeffect
     useEffect(()=>{
         d3.csv(daily_rowcount_res).then(function(data) {
-            var dayset = []
-            var dayselect = document.getElementById("dayselect");
+            var tmp_dayset = []
             var min_day = ''
             data.forEach(row => {
                 if (min_day == '' || Date(min_day) > Date(row['day'])) {
                     min_day = row['day']
                 }
-                if (!dayset.includes(row['day'])) dayset.push(row['day'])
+                if (!tmp_dayset.includes(row['day'])) tmp_dayset.push(row['day'])
             });
 
-            for(var i = 0; i < dayset.length; i++) {
-                var opt = document.createElement('option');
-                opt.value = dayset[i];
-                opt.innerHTML = dayset[i];
-                dayselect.append(dayset[i], opt)
-            }
-
+            setDaySet(tmp_dayset);
             setData(data);
             setLoading(false);
             setDay(min_day);
@@ -131,6 +172,7 @@ function DailyNumOfRows() {
             return row['day'] == day
         });
 
+        var tmp_max = 0;
         var i = 0, j = 0;
         for (i = 0; i < day_data.length; i++) {
             var total = 0;
@@ -138,7 +180,16 @@ function DailyNumOfRows() {
                 total += Number(day_data[i][keys[j]])
             }
             day_data[i].total = total
+            if(tmp_max < day_data[i].total) tmp_max = day_data[i].total;
         }
+        if (rangebtncnt > 0) {
+            day_data=day_data.filter((ele) => {
+                return ele.total >= range[0] && ele.total <= range[1]
+            })
+            setRange([range[0], range[1]]);
+        } else setRange([range[0], tmp_max]);
+        setMaxTotal(tmp_max)
+
         day_data.sort(function(a, b) { 
             if(ordering) return b.total - a.total;
             else return a.total - b.total;
@@ -149,8 +200,10 @@ function DailyNumOfRows() {
         z.domain(entire_keys);
 
         const svg = d3.select(svgRef.current);
+        svg.attr("height", day_data.length * 25);
+        // svg.attr("height", Math.max(day_data.length * 25, 400));
         const width = svg.attr("width") - margin.left - margin.right;
-        const height = svg.attr("height") - margin.top - margin.bottom;
+        const height = svg.attr("height");
         var g = svg.select("#svg_frame").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
         svg.select("#svg_frame").selectAll(".appended").remove()
 
@@ -163,12 +216,6 @@ function DailyNumOfRows() {
             return d3.axisBottom(x)
                 .ticks(5)
         }
-        // gridlines in y axis function
-        function make_y_gridlines() {		
-            return d3.axisLeft(y)
-                .ticks(5)
-        }
-
 
         x.rangeRound([0, width-200]);
         y.rangeRound([0, height]);
@@ -182,7 +229,7 @@ function DailyNumOfRows() {
 
         g.select("#chart")
             .selectAll("g")
-            .data(d3.stack().keys(keys)(day_data))
+            .data(d3.stack().keys(keys.reverse())(day_data))
             .enter()
             .append("g").attr("class", "appended")
             .attr("fill", function(d) { return z(d.key); })
@@ -194,11 +241,12 @@ function DailyNumOfRows() {
             .attr("x", function(d) { return x(d[0]); })
             .attr("y", function(d) { return y(d.data.email); })
             .attr("width", function(d) { return x(d[1]) - x(d[0]); })
-            .attr("height", y.bandwidth())
-            .attr("id", () => {
+            .attr("height", 22)
+            .attr("id", function(d) {
                 bar_cnt++;
                 return ("bar"+bar_cnt);
             });
+        keys.reverse();
 
         g.select("#chart")
             .selectAll("rect")
@@ -221,10 +269,10 @@ function DailyNumOfRows() {
 
         var legend = g.select("#legend")
             .selectAll("g")
-            .data(entire_keys.slice().reverse())
+            .data(entire_keys.slice())
             .enter()
             .append("g").attr("class", "appended")
-            .attr("transform", function(d, i) { return "translate(-50," + (300 + i * 20) + ")"; });
+            .attr("transform", function(d, i) { return "translate(-50," + (i * 20) + ")"; });
 
         legend.append("rect").attr("class", "appended")
             .attr("x", width - 19)
@@ -250,34 +298,91 @@ function DailyNumOfRows() {
             })
             .style("font-size", "13px")
             .on('click', (event, datum) => handleDatumType(event, datum));
-    }}, [loading, keycnt, ordering, day]);
+        
+        svg.attr("height", Math.max(400, day_data.length * 25 + 80));
+    }}, [loading, keycnt, ordering, day, rangebtncnt, max_total]);
 
     // render
     return (
         <div className="fragment">
             <div className="title">
                 <h1>Daily Row Counts of Users</h1>
-                <div>
-                    <select id="dayselect" onChange={handleDate}>
-                    </select>
-                    <g onClick={handleToAscending}>
-                        <input id="Ascending" value="Ascending" type="radio" checked={ordering} onChange={handleToAscending}></input>
-                        <text>Ascending</text>
-                    </g>
-                    <g onClick={handleToDescending}>
-                        <input id="Descending" value="Descending" type="radio" checked={!ordering} onChange={handleToDescending}></input>
-                        <text>Descending</text>
-                    </g>
-                </div>
+
+                <mui.FormControl component="fieldset">
+                    <mui.FormLabel component="legend">Sort Type Selection</mui.FormLabel>
+                    <MyRadio row aria-label="sorting" name="row-radio-buttons-group">
+                        <mui.FormControlLabel value="Ascending" control={<mui.Radio />} checked={ordering} onChange={handleToAscending} label="Ascending" />
+                        <mui.FormControlLabel value="Descending" control={<mui.Radio />} checked={!ordering} onChange={handleToDescending} label="Descending" />
+                    </MyRadio>
+                </mui.FormControl>
+                
+                <mui.FormControl>
+                    <mui.InputLabel id="dayselect-label">Date</mui.InputLabel>
+                    <MySelect
+                        labelId="dayselect-label"
+                        id="dayselect"
+                        label="Date"
+                        value={day}
+                        onChange={handleDate}
+                    >
+                    {dayset.map(element => (
+                        <mui.MenuItem
+                            value={element + ""}
+                            key={element + ""}
+                            >
+                            {element}
+                        </mui.MenuItem>
+                    ))}
+                    </MySelect>
+                </mui.FormControl>
+                
+                <mui.FormControl>
+                    <mui.InputLabel id="multiple-type-label">Type</mui.InputLabel>
+                    <MySelect
+                        labelId="multiple-type-label"
+                        id="typeselect"
+                        label="Type"
+                        value={keys}
+                        onChange={handleDatumSelect}
+                        input={<mui.OutlinedInput label="Tag" />}
+                        renderValue={(selected) => selected.join(', ').replaceAll('_', ' ').toUpperCase()}
+                        MenuProps={MenuProps}
+                    >
+                    {entire_keys.map(element => (
+                        <mui.MenuItem
+                            value={element}
+                            key={element}
+                            >
+                            <mui.Checkbox checked={keys.indexOf(element) > -1} />
+                            <mui.ListItemText primary={element.replaceAll('_', ' ').toUpperCase()} />
+                        </mui.MenuItem>
+                    ))}
+                    </MySelect>
+                </mui.FormControl>
+
+                <mui.FormControl sx={{ width: 300 }}>
+                    <mui.Slider
+                        min={0}
+                        max={max_total}
+                        getAriaLabel={() => 'Total Row Count Range'}
+                        value={range}
+                        onChange={handleRange}
+                        getAriaValueText= {(value) => {return String(value)}}
+                        aria-labelledby="non-linear-slider"
+                    />
+                    <mui.Button size="small" variant="text" onClick={handleRangeBtn}>Apply_Range_Setting</mui.Button>
+                </mui.FormControl>
             </div>
             {loading && <h2>Loding ...</h2>}
             {!loading &&
                 <>
-                <svg ref = {svgRef} width="1300" height="1820">
+                <svg ref = {svgRef} width="1300">
                     <g id = "svg_frame">
                         <g id = "xgrid" className = "grid"/>
                         <g id = "ygrid" className = "grid"/>
+                        <mui.Tooltip title={tooltip_text} enterDelay={200} followCursor arrow>
                         <g id = "chart"/>
+                        </mui.Tooltip>
                         <g id = "xaxis_t" className = "axis"/>
                         <g id = "xaxis_b" className = "axis"/>
                         <g id = "yaxis" className = "axis"/>
