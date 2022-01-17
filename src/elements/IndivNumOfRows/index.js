@@ -46,6 +46,8 @@ function IndivNumOfRows() {
 
         return raw_date.getFullYear() + '/' + month + '/' + day + ' ' + hour + ':' + minute;
     }
+    // global variables
+    var circle_cnt = 0;
 
     // handlers
     const handleAggrDate = () => { setAggr("1"); }
@@ -214,6 +216,7 @@ function IndivNumOfRows() {
             .range([0, innerWidth])
             .nice();
 
+        circle_cnt = 0;
         for (var i = 0; i < datumType.length; i++) {
             const tydata = data.filter(function(row) {
                 return row.datumType == datumType[i];
@@ -271,9 +274,8 @@ function IndivNumOfRows() {
                 .attr('id', 'line-path')
                 .attr('stroke', colors[i])
                 .attr('stroke-width', '3')
-                .attr('d', lineGenerator(tydata))
+                .attr('d', lineGenerator(tydata));
             
-            var circle_cnt = 0;
             g.selectAll('circle')
                 .data(tydata)
                 .enter().append('circle')
