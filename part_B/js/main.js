@@ -5,7 +5,7 @@ let parseTime = d3.timeParse("%Y-%m-%d")
 let dayselect = document.getElementById("dayselect")
 let dataselect = document.getElementById("dataselect")
 
-let dataset = ["all","null","app_usage" ,"battery" ,"bluetooth" ,"call_log","data_traffic","fitness","device_event","external_sensor","installed_app","location","media","message","notification","physical_activity","physical_activity_transition","survey","wifi"]
+let dataset = ["all","null",'app_usage', 'battery', 'bluetooth', 'call_log', 'data_traffic','device_event', 'external_sensor', 'fitness', 'installed_app', 'key_log','location', 'media', 'message', 'notification', 'physical_activity','physical_activity_transition', 'survey', 'wifi']
 let dayset = []
 let newDataset = []
 let flag = false
@@ -55,7 +55,6 @@ function makeChange(){
                     }
                     
                 })
-                console.log(selectedItemList)
             }
     });
 }
@@ -70,7 +69,7 @@ let width = 400
 const margin = {top: 50, right: 50, bottom: 50, left: 50};
 
 // average line 
-let average = 0 + margin.right //total number of rows/data collection period
+let average = 50 + margin.right //total number of rows/data collection period
 
 function renderChange(){
 
@@ -138,18 +137,22 @@ const svg = d3.select("#chart-area")
     .attr("width",width+margin.left+margin.right)
     .attr("height",height+margin.top+margin.bottom);
 
+
+
+
 let t = d3.transition().duration(500);
 
 let z = d3.scaleLinear()
-        .range([height,0]);
+        .range([height,0])
+        .domain([0,150]) ;
 
 let y = d3.scaleLinear()
-        .range([height,0]);
+        .range([height,0])
+        .domain([0,150]);
 
-let x = d3.scaleBand()
+let x = d3.scaleLinear()
         .range([0,width])
-        .paddingInner(0.3)
-        .paddingOuter(0.3);
+        .domain([0,20000])
 
 let averageGroup = svg.append("g")
             .attr("class", "redAxis")
@@ -231,8 +234,8 @@ function update(data){
         
         jsonFile["email"]= emails[i],
         jsonFile["row"]=rows[i],
-        jsonFile["people"]=numberOfDuplicates[i]
-        jsonFile["counter"] = counterList[emails.length-1]
+        jsonFile["people"]=numberOfDuplicates[i] // how many people share the same count of rows
+        jsonFile["counter"] = counterList[emails.length-1] 
         average+=(rows[i]/counterList[emails.length-1])
         newData.push(jsonFile)
         jsonFile=[]
@@ -241,35 +244,38 @@ function update(data){
     }
 
     //binning
-    console.log(newData)
+    
     let map = newData.map(function(d){
         return d.row;
     })
-
     // set the parameters for the histogram
-    var histogram = d3.histogram()
-    .thresholds([0,500]); // then the numbers of bins
+    let histogram = d3.histogram()
+        .value(function(d){
+            return d
+        })
+        .domain(x.domain())
+        .thresholds(x.ticks(20)); // then the numbers of bins
+    
 
     // And apply this function to data to get the bins
-    var bins = histogram(map);
-    console.log(bins)
+    let bins = histogram(map);
     
-    y.domain([0,150])    
-    z.domain([0,150])  
     
-    x.domain(d3.extent(newData,function(d){
-        return d.row
-    }))
+    // x.domain(d3.extent(newData,function(d){
+    //     return d.row
+    // }))
     
     let averageAxisCall = d3.axisLeft(z)
                         .ticks(0)
                         
     let yAxisCall = d3.axisLeft(y)
                         .ticks(3)
+                        .tickSize((-height)) // -innerHeight would also work
 
     let xAxisCall = d3.axisBottom(x)
                         .ticks(12)
                         .tickFormat(d => `${parseInt(d / 1000)}k`)
+                        .tickSize((-width))
     
     averageGroup.call(averageAxisCall)
     yGroup.transition(t).call(yAxisCall)
@@ -298,7 +304,7 @@ function update(data){
     let tip = d3.tip()
 		.attr("class", "d3-tip")
 		.html(function(d){
-			let text = "Distinct count of Email: " + d.people
+			let text = "Distinct count of Email: " + d.length
 			return text
 		})
 	
@@ -306,41 +312,32 @@ function update(data){
 
     //old data
     let rectangles= svg.selectAll("rect")
-            .data(newData,function(d){
-                return d.row; //tracks the independent variable when slice is used
-            })
+            .data(bins)
+            .on("mouseover", tip.show)
+            .on("mouseout", tip.hide)
+            .attr("class","bar")
+            
+            // .data(newData,function(d){
+            //     return d.row; //tracks the independent variable when slice is used
+            // })
     
     //remove unused old data
     rectangles.exit().remove()
-
-    //update the figure
-    rectangles.transition(t)
-        .attr("x",function(d){
-            return (x(d.row)+margin.right)
-        })
-        .attr("y",function(d){
-            return (y(d.people)+margin.top)
-        })
-        .attr("width",x.bandwidth)
-        .attr("height",function(d){
-            return (height-y(d.people));
-        })
     
-    //enter
+    
+    //enter and manage the exiting
     rectangles
-            .enter()
-            .append("rect")
-            .on('mouseover', tip.show)
-            .on("mouseout",tip.hide)
-            .attr("x",function(d){
-                return ((x(d.row))+margin.right)
-            })
-            .attr("y",function(d){
-                return ((y(d.people))+margin.top)
-            })
-            .attr("width",x.bandwidth)
-            .attr("height",function(d){
-                return (height-y(d.people));
-            })
-            .attr("fill","#008ECC");
+        .enter()
+        .append("rect")
+        .merge(rectangles)
+        .transition(t)
+        
+        .attr("x",1)
+        .attr("transform", function(d) { return "translate(" + (x(d.x0)+margin.right) + "," + (y(d.length)+margin.top) + ")"; })
+        .attr("width",function(d) { return x(d.x1) - x(d.x0)  ; })
+        .attr("height",
+            function(d) { return height - y(d.length); }
+        )
+        .attr("fill","#008ECC");
+        
 }
