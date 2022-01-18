@@ -23,7 +23,7 @@ function IndivNumOfRows() {
     const height = 100;
     const yTicks = 3;
     const datumType = ['APP_USAGE_EVENT', 'BATTERY', 'BLUETOOTH', 'CALL_LOG', 'DATA_TRAFFIC',
-        'DEVICE_EVENT', 'FITNESS', 'EXTERNAL_SENSOR', 'INSTALLED_APP', 'KEY_LOG',
+        'DEVICE_EVENT', 'FITNESS', 'EMBEDDED_SENSOR', 'EXTERNAL_SENSOR', 'INSTALLED_APP', 'KEY_LOG',
         'LOCATION', 'MEDIA', 'MESSAGE', 'NOTIFICATION', 'PHYSICAL_ACTIVITY',
         'PHYSICAL_ACTIVITY_TRANSITION', 'SURVEY', 'WIFI'];
     const colors = ["#5779A3", "#E1EDF6", "#E59243", "#F6C087",
@@ -48,6 +48,7 @@ function IndivNumOfRows() {
     }
     // global variables
     var circle_cnt = 0;
+    var prev_select_circle = [];
 
     // handlers
     const handleAggrDate = () => { setAggr("1"); }
@@ -68,6 +69,13 @@ function IndivNumOfRows() {
         setRangeBtnCnt((rangebtncnt) => rangebtncnt + 1);
     };
     const handleTooltipShow = (event, datum) => {
+        // for(var i = 0; i < prev_select_circle.length; i++) {
+        //     var prev_circle = document.getElementById(prev_select_circle[i]);
+        //     prev_circle.setAttribute("r", 3);
+        //     prev_circle.style = 'opacity: 1';
+        // }
+        // prev_select_circle = []
+
         var selected_circle = document.getElementById(event.target.id);
         selected_circle.setAttribute("r", 10);
         event.target.style = 'opacity: 0.6';
@@ -76,7 +84,7 @@ function IndivNumOfRows() {
         var type_name = datum.datumType
         if (type_name == 'PHYSICAL_ACTIVITY_TRANSITION') type_name = 'PHYS_ACT_TRANS'
         else if (type_name == 'APP_USAGE_EVENT') type_name = 'APP_USAGE'
-        tmp_text += type_name.replaceAll('_', ' ') + ' at ';
+        tmp_text += type_name.replaceAll('_', ' ') + '\nat ';
 
         var date;
         if (aggr == '1') date = new Date(datum.date);
@@ -88,9 +96,12 @@ function IndivNumOfRows() {
         setTooltip(tmp_text)
     }
     const handleTooltipHide = (event, datum) => {
+        // var selected_circle = event.target.id;
+        // prev_select_circle.push(selected_circle);
         var selected_circle = document.getElementById(event.target.id);
         selected_circle.setAttribute("r", 3);
-        setTooltip('')
+        event.target.style = 'opacity: 1';
+        setTooltip('');
     }
 
 
@@ -350,9 +361,10 @@ function IndivNumOfRows() {
         }
         {!(Dloading || Hloading || Mloading) &&
             <>
-            <svg ref = {svgRef} width={width} height={height * 19}>
+            <svg ref = {svgRef} width={width} height={height * 20}>
 
-                <mui.Tooltip title={tooltip_text} enterDelay={100} leaveDelay={500} followCursor arrow>
+                <mui.Tooltip enterDelay={100} leaveDelay={500} followCursor arrow id='tooltip'
+                    title={ tooltip_text.length <= 0? '' : <p style={{whiteSpace: 'pre-wrap', textAlign: 'center'}}>{tooltip_text}</p> }>
                 <g id = "svg_frame">
                 </g>
                 </mui.Tooltip>

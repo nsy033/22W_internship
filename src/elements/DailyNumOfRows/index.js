@@ -20,8 +20,8 @@ function DailyNumOfRows() {
     const margin = {top: 20, right: 20, bottom: 50, left: 230};
     const entire_keys = [
         'app_usage', 'battery', 'bluetooth', 'call_log', 'data_traffic',
-        'device_event', 'external_sensor', 'fitness', 'installed_app', 'key_log',
-        'location', 'media', 'message', 'notification', 'physical_activity',
+        'device_event', 'embedded_sensor', 'external_sensor', 'fitness', 'installed_app',
+        'key_log', 'location', 'media', 'message', 'notification', 'physical_activity',
         'physical_activity_transition', 'survey', 'wifi'];
     const MyRadio = styled(mui.RadioGroup)({
         marginRight: '20px',
@@ -44,8 +44,16 @@ function DailyNumOfRows() {
     const color_set = ["#5779A3", "#E1EDF6", "#E59243", "#F6C087", "#6B9E58",
                         "#9BCE86", "#B39A44", "#ECCE74", "#5F9794", "#91BAB6",
                         "#D1605E", "#F2A19D", "#77706E", "#B8B0AC", "#C67593",
-                        "#F1C2D1", "#A87D9F", "#D2B6A8"]
+                        "#F1C2D1", "#A87D9F", "#D2B6A8", "#7ECBCB"]
+    const date_formatter = (raw_date) => {
+        let month = raw_date.getMonth() + 1;
+        let day = raw_date.getDate();
 
+        month = month >= 10 ? month : '0' + month;
+        day = day >= 10 ? day : '0' + day;
+
+        return raw_date.getFullYear() + '/' + month + '/' + day;
+    }
     // variables
     var bar_cnt = 0;
     var x = d3.scaleLinear();
@@ -68,7 +76,7 @@ function DailyNumOfRows() {
         setRange([0, 0]);
     }
     const handleTooltipShow = (event, datum) => {
-        var tmp_text = datum.data.email + ': \n' + String(datum[1] - datum[0]);
+        var tmp_text = datum.data.email + '\n' + String(datum[1] - datum[0]);
         tmp_text = tmp_text + ' row(s) of ';
         const bar_color = event.toElement.parentNode.attributes.fill.nodeValue;
         var type_name = entire_keys[color_set.indexOf(bar_color)]
@@ -144,8 +152,8 @@ function DailyNumOfRows() {
     var [keycnt, setKeyCnt] = useState(0);
     var [keys, setKeys] = useState([
         'app_usage', 'battery', 'bluetooth', 'call_log', 'data_traffic',
-        'device_event', 'external_sensor', 'fitness', 'installed_app', 'key_log',
-        'location', 'media', 'message', 'notification', 'physical_activity',
+        'device_event', 'embedded_sensor', 'external_sensor', 'fitness', 'installed_app',
+        'key_log', 'location', 'media', 'message', 'notification', 'physical_activity',
         'physical_activity_transition', 'survey', 'wifi']);
 
     // useeffect
@@ -330,7 +338,7 @@ function DailyNumOfRows() {
                             value={element + ""}
                             key={element + ""}
                             >
-                            {element}
+                            {date_formatter(new Date(2000 + Number(element.split('-')[2]), element.split('-')[1], element.split('-')[0]))}
                         </mui.MenuItem>
                     ))}
                     </MySelect>
@@ -382,7 +390,8 @@ function DailyNumOfRows() {
                     <g id = "svg_frame">
                         <g id = "xgrid" className = "grid"/>
                         <g id = "ygrid" className = "grid"/>
-                        <mui.Tooltip title={tooltip_text} enterDelay={100} followCursor arrow>
+                        <mui.Tooltip enterDelay={100} followCursor arrow
+                            title={ tooltip_text.length <= 0? '' : <p style={{whiteSpace: 'pre-wrap', textAlign: 'center'}}>{tooltip_text}</p> }>
                         <g id = "chart"/>
                         </mui.Tooltip>
                         <g id = "xaxis_t" className = "axis"/>
