@@ -2,6 +2,7 @@
 from pymongo import MongoClient
 from bson import json_util
 import csv
+import json
 import sys
 reload(sys)
 sys.setdefaultencoding("UTF-8")
@@ -43,8 +44,8 @@ query = {
         # you can use the conditions twice, e.g., {"timestamp": {"$gt": 0}}, {"timestamp": {"$lt": 5}}
         # you can convert the local time to timestamp (and vice versa) via here: https://www.epochconverter.com/
         # you need to use local time 00:00 ~ 23:59 to read daily results.
-    }, {"timestamp": {"$gt": 1637420400000}}, {"timestamp": {"$lt": 1638025200000}}, {
-        # "value.responseTime": { "$gt": 0 }  
+    }, {"timestamp": {"$gt": 1637679600000}}, {"timestamp": {"$lt": 1637852400000}}, {
+        # "value.responseTime": { "$gt": 0 }
         # exclude this condition if you read other datumType.
         # use this condition only for querying SURVEY data.
     }]
@@ -78,7 +79,7 @@ print("query from DB ...  ")
 # you can study the query method here: https://docs.mongodb.com/manual/reference/method/db.collection.find/
 # the type of the resulting query is dict.
 # test_result = collection.find_one(query) # you can use find_one method to test query result.
-all_data = list(collection.find(query, no_cursor_timeout=True)) #  or you can use find method to read all matched results.
+all_data = list(collection.find(query)) #  or you can use find method to read all matched results.
 print("Done")
 # pprint.pprint(test_result, indent=2)
 # with open("wifi_test_result.json", "w") as f:
@@ -86,7 +87,7 @@ print("Done")
 
 # import and save the data from DB firstly as json file
 # print("import as json ...  ")
-# with open("call_log.json", "w") as f:
+# with open("embedded_sensor.json", "w") as f:
 #   json.dump(all_data, f, indent=2, default=json_util.default, ensure_ascii=False)
 # print("Done")
     

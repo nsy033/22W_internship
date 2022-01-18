@@ -6,16 +6,16 @@ date_cnt = pd.read_csv('./date_cnt.csv')
 print("Done")
 
 datumType = ['APP_USAGE_EVENT', 'BATTERY', 'BLUETOOTH', 'CALL_LOG', 'DATA_TRAFFIC',
-             'DEVICE_EVENT', 'FITNESS', 'EXTERNAL_SENSOR', 'INSTALLED_APP', 'KEY_LOG',
-             'LOCATION', 'MEDIA', 'MESSAGE', 'NOTIFICATION', 'PHYSICAL_ACTIVITY',
+             'DEVICE_EVENT', 'FITNESS', 'EMBEDDED_SENSOR', 'EXTERNAL_SENSOR', 'INSTALLED_APP',
+             'KEY_LOG', 'LOCATION', 'MEDIA', 'MESSAGE', 'NOTIFICATION', 'PHYSICAL_ACTIVITY',
              'PHYSICAL_ACTIVITY_TRANSITION', 'SURVEY', 'WIFI']
 
 f = open('daily_rowcount_res.csv','w')
 wr = csv.writer(f)
 wr.writerow(['email', 'day',
              'app_usage', 'battery', 'bluetooth', 'call_log', 'data_traffic',
-             'device_event', 'fitness', 'external_sensor', 'installed_app', 'key_log',
-             'location', 'media', 'message', 'notification', 'physical_activity',
+             'device_event', 'fitness', 'embedded_sensor', 'external_sensor', 'installed_app',
+             'key_log', 'location', 'media', 'message', 'notification', 'physical_activity',
              'physical_activity_transition', 'survey', 'wifi'])
 
 dates = date_cnt['date'].unique()
