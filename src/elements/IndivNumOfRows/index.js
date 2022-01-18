@@ -316,6 +316,7 @@ function IndivNumOfRows() {
                 <mui.FormControl sx={{ width: 300 }}>
                     <mui.Slider
                         min={min_minute}
+                        step={10 * 60 * 1000}
                         max={max_minute}
                         getAriaLabel={() => 'Period'}
                         value={range}

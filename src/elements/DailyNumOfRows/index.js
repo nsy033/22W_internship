@@ -308,7 +308,7 @@ function DailyNumOfRows() {
             <div className="title" style ={{width: '1300px', textAlign: 'center', marginLeft: '-80px'}}>
                 <h1>Daily Row Counts of Users</h1>
 
-                <mui.FormControl component="fieldset">
+                <mui.FormControl component="fieldset"  style ={{marginTop: '15px'}}>
                     <mui.FormLabel component="legend">Sort Type Selection</mui.FormLabel>
                     <MyRadio row aria-label="sorting" name="row-radio-buttons-group">
                         <mui.FormControlLabel value="Ascending" control={<mui.Radio />} checked={ordering} onChange={handleToAscending} label="Ascending" />
@@ -316,7 +316,7 @@ function DailyNumOfRows() {
                     </MyRadio>
                 </mui.FormControl>
                 
-                <mui.FormControl>
+                <mui.FormControl style ={{marginTop: '15px'}}>
                     <mui.InputLabel id="dayselect-label">Date</mui.InputLabel>
                     <MySelect
                         labelId="dayselect-label"
@@ -336,7 +336,7 @@ function DailyNumOfRows() {
                     </MySelect>
                 </mui.FormControl>
                 
-                <mui.FormControl>
+                <mui.FormControl style ={{marginTop: '15px'}}>
                     <mui.InputLabel id="multiple-type-label">Type</mui.InputLabel>
                     <MySelect
                         labelId="multiple-type-label"
@@ -361,8 +361,10 @@ function DailyNumOfRows() {
                 </mui.FormControl>
 
                 <mui.FormControl sx={{ width: 300 }}>
+                    <mui.FormLabel component="legend">Current Range Set: {range[0]} ~ {range[1]}</mui.FormLabel>
                     <mui.Slider
                         min={0}
+                        step={10}
                         max={max_total}
                         getAriaLabel={() => 'Total Row Count Range'}
                         value={range}
