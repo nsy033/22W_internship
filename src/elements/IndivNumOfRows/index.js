@@ -34,7 +34,7 @@ function IndivNumOfRows() {
         marginRight: '20px',
     });
     const date_formatter = (raw_date) => {
-        let month = raw_date.getMonth() + 1;
+        let month = raw_date.getMonth();
         let day = raw_date.getDate();
         let hour = raw_date.getHours();
         let minute = raw_date.getMinutes();

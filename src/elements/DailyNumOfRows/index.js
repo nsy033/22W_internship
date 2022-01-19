@@ -10,8 +10,8 @@ import * as mui from '@mui/material';
 // 1. query.py -> get raw data csv file for each indivitual datumtype -> [datumTypeName].csv
 //    -> there should be a folder named 'dataset' which contains [datumTypeName].csv files to proceed to the next step
 //       but I gitignored because of the large file size
-// 2. extract_cnt.py -> intermediate data process -> date_cnt.csv
-// 3. daily_rowcount.py
+// 2. extract_cnt.py
+//    -> intermediate data process: date_cnt.csv, hour_cnt.csv, minute_cnt.csv -> used for individual plot
 //    -> format the file in order to use it to make the horizontal staked bar, daily number of rows for each users
 //    -> daily_rowcount_res.csv
 
@@ -46,7 +46,7 @@ function DailyNumOfRows() {
                         "#D1605E", "#F2A19D", "#77706E", "#B8B0AC", "#C67593",
                         "#F1C2D1", "#A87D9F", "#D2B6A8", "#7ECBCB"]
     const date_formatter = (raw_date) => {
-        let month = raw_date.getMonth() + 1;
+        let month = raw_date.getMonth();
         let day = raw_date.getDate();
 
         month = month >= 10 ? month : '0' + month;
@@ -112,8 +112,17 @@ function DailyNumOfRows() {
         }
     }
     const handleDatumSelect = (event) => {
+        console.log(keys)
         var selected_type = event.target.value;
-        if (keys.includes(selected_type)) {
+        if (selected_type == 'ALL') {
+            setKeys([... entire_keys]);
+            setKeyCnt(cnt => cnt + 1);
+        }
+        else if (selected_type == 'NONE') {
+            setKeys([]);
+            setKeyCnt(cnt => cnt + 1);
+        }
+        else if (keys.includes(selected_type)) {
             setKeys([
                 ...keys.filter(item => item !== selected_type)
               ]);
@@ -353,9 +362,27 @@ function DailyNumOfRows() {
                         value={keys}
                         onChange={handleDatumSelect}
                         input={<mui.OutlinedInput label="Tag" />}
-                        renderValue={(selected) => selected.join(', ').replaceAll('_', ' ').toUpperCase()}
+                        renderValue={ (selected) =>
+                                keys.length == entire_keys.length
+                                ? '(ALL)'
+                                : selected.join(', ').replaceAll('_', ' ').toUpperCase()
+                            }
                         MenuProps={MenuProps}
                     >
+                        <mui.MenuItem
+                            value={'ALL'}
+                            key={'ALL'}
+                            >
+                            <mui.Checkbox checked={keys.length == entire_keys.length} />
+                            <mui.ListItemText primary={'(ALL)'} />
+                        </mui.MenuItem>
+                        <mui.MenuItem
+                            value={'NONE'}
+                            key={'NONE'}
+                            >
+                            <mui.Checkbox checked={keys.length == 0} />
+                            <mui.ListItemText primary={'(NONE)'} />
+                        </mui.MenuItem>
                     {entire_keys.map(element => (
                         <mui.MenuItem
                             value={element}
