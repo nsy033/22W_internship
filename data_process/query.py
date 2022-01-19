@@ -44,7 +44,7 @@ query = {
         # you can use the conditions twice, e.g., {"timestamp": {"$gt": 0}}, {"timestamp": {"$lt": 5}}
         # you can convert the local time to timestamp (and vice versa) via here: https://www.epochconverter.com/
         # you need to use local time 00:00 ~ 23:59 to read daily results.
-    }, {"timestamp": {"$gt": 1637679600000}}, {"timestamp": {"$lt": 1637852400000}}, {
+    }, {"timestamp": {"$gt": 1637679600000}}, {"timestamp": {"$lt": 1637766000000}}, {
         # "value.responseTime": { "$gt": 0 }
         # exclude this condition if you read other datumType.
         # use this condition only for querying SURVEY data.
