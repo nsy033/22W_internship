@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
-import date_cnt from './date_cnt.csv';
-import hour_cnt from './hour_cnt.csv';
-import minute_cnt from './minute_cnt.csv';
+import date_cnt from '../../data_process/date_cnt.csv';
+import hour_cnt from '../../data_process/hour_cnt.csv';
+import minute_cnt from '../../data_process/minute_cnt.csv';
 import './index.css';
 import { styled } from '@mui/styles';
 import * as mui from '@mui/material';
