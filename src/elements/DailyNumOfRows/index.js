@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
-import daily_rowcount_res from './daily_rowcount_res.csv';
+import daily_rowcount_res from '../../data_process/daily_rowcount_res.csv';
 import './index.css';
 import { styled } from '@mui/styles';
 import * as mui from '@mui/material';
