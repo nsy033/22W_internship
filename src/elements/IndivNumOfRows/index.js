@@ -16,7 +16,7 @@ function IndivNumOfRows() {
     const margin = {
         top: 10,
         right: 40,
-        left: 200,
+        left: 220,
         bottom: 15,
     };
     const width = 1200;
@@ -48,7 +48,6 @@ function IndivNumOfRows() {
     }
     // global variables
     var circle_cnt = 0;
-    var prev_select_circle = [];
 
     // handlers
     const handleAggrDate = () => { setAggr("1"); }
@@ -69,13 +68,6 @@ function IndivNumOfRows() {
         setRangeBtnCnt((rangebtncnt) => rangebtncnt + 1);
     };
     const handleTooltipShow = (event, datum) => {
-        // for(var i = 0; i < prev_select_circle.length; i++) {
-        //     var prev_circle = document.getElementById(prev_select_circle[i]);
-        //     prev_circle.setAttribute("r", 3);
-        //     prev_circle.style = 'opacity: 1';
-        // }
-        // prev_select_circle = []
-
         var selected_circle = document.getElementById(event.target.id);
         selected_circle.setAttribute("r", 10);
         event.target.style = 'opacity: 0.6';
@@ -90,7 +82,16 @@ function IndivNumOfRows() {
         if (aggr == '1') date = new Date(datum.date);
         else if( aggr == '0') date = new Date(datum.hour);
         else date = new Date(datum.minute);
-        const formate_date = date_formatter(date);
+        
+        var formate_date = date_formatter(date);
+        if (aggr == '1') formate_date = formate_date.split(' ')[0];
+        else if( aggr == '0') {
+            var tmp_time = formate_date.split(':')[0]
+            var hour = Number(tmp_time.split(' ')[1]);
+            if (hour < 12) formate_date = tmp_time.split(' ')[0] + ' AM ' + String(hour);
+            else if (hour == 12) formate_date = tmp_time.split(' ')[0] + ' PM ' + String(hour);
+            else formate_date = tmp_time.split(' ')[0] + ' PM ' + String(hour - 12);
+        }
         tmp_text += formate_date;
 
         setTooltip(tmp_text)
@@ -144,6 +145,17 @@ function IndivNumOfRows() {
                 d.date = new Date(Number(d_split[2]) + 2000, d_split[1], d_split[0]);
             });
 
+            for (var a = 0; a < data.length - 1; a++) {
+                for (var b = a+1; b < data.length ; b++) {
+                    const a_date = new Date(data[a].date).getTime()
+                    const b_date = new Date(data[b].date).getTime()
+                    if ( a_date === b_date && data[a].datumType == data[b].datumType) {
+                        data[a].value += data[b].value;
+                        data.splice(b, 1);
+                    }
+                }
+            }
+
             setDay(min_day);
             setDData(data);
             setDLoading(false);
@@ -166,18 +178,22 @@ function IndivNumOfRows() {
         d3.csv(minute_cnt).then(function(data) {
             var tmp_min = Infinity;
             var tmp_max = -1;
+            
+            data = data.filter(function(row){
+                return row.subject_email == email_addr;
+            });
             data.forEach(d => {
                 const d_split = d.minute.split('-');
                 const h_split = d_split[2].split(' ');
                 const m_split = h_split[1].split(':');
                 d.value = +d.value;
                 d.minute = new Date(Number(d_split[0]) + 2000, d_split[1], h_split[0], m_split[0], m_split[1]);
-                if (d.minute.getTime() < tmp_min) tmp_min = d.minute.getTime()
-                if (d.minute.getTime() > tmp_max) tmp_max = d.minute.getTime()
+                if (d.minute.getTime() < tmp_min) tmp_min = d.minute.getTime();
+                if (d.minute.getTime() > tmp_max) tmp_max = d.minute.getTime();
             });
-            data = data.filter(function(row){
-                return row.subject_email == email_addr;
-            });
+            const coeff = 1000 * 60 * 10 ;
+            tmp_min = Math.floor(tmp_min / coeff) * coeff;
+            tmp_max = Math.round(tmp_max / coeff) * coeff;
 
             const start = new Date(tmp_min);
             const format_start = date_formatter(start);
@@ -232,13 +248,16 @@ function IndivNumOfRows() {
             const tydata = data.filter(function(row) {
                 return row.datumType == datumType[i];
             });
+
             const g = svg.select("#svg_frame").append("g").attr("transform", "translate(" + margin.left + "," + (margin.top + height * i) + ")");
         
             const yScale = d3.scaleLinear()
                 .domain(d3.extent(tydata, yValue))
                 .range([innerHeight, 0])
                 .nice();
-            const yAxis = d3.axisLeft(yScale).ticks(yTicks, "~s").tickSize(-innerWidth).tickPadding(10);
+            const yAxis = d3.axisLeft(yScale).ticks(yTicks)
+                .tickSize(-innerWidth).tickPadding(10)
+                .tickFormat(d3.format(".3s"));
             const yAxisG = g.append('g').attr("class", "appended").call(yAxis);
             yAxisG.selectAll('.domain').remove();
             yAxisG.selectAll('line').attr("stroke", "rgb(187 189 201)");
@@ -246,7 +265,7 @@ function IndivNumOfRows() {
                 .append('text').attr("class", "appended")
                 .attr('class', 'axis-label')
                 .attr('y', height / 2)
-                .attr('x', -185)
+                .attr('x', -200)
                 .attr('fill', 'black')
                 // .attr('transform', `rotate(-90)`)
                 .attr('text-anchor', `start`)
