@@ -410,7 +410,14 @@ function DailyNumOfRows() {
                     <mui.Button size="small" variant="text" onClick={handleRangeBtn}>Apply_Range_Setting</mui.Button>
                 </mui.FormControl>
             </div>
-            {loading && <h2>Loding ...</h2>}
+            {loading &&
+            <mui.Backdrop
+                sx={{ color: '#ffffff'}}
+                open= {true}
+            >
+                <mui.CircularProgress color="inherit" />
+            </mui.Backdrop>
+            }
             {!loading &&
                 <>
                 <svg ref = {svgRef} width="1300">
