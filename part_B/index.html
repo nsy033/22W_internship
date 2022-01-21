@@ -23,23 +23,22 @@
     <!-- Bootstrap grid setup -->
     <div class="container">
         <div class="row">
-            <select id="dayselect" onchange="renderChange()"></select>
             <select id="dataselect" onchange="makeChange()"></select>
 
             <div id="chart-area"></div>
             <div>
-                <input type="radio" id="Choice1"
-                 name="contact" >
-                <label for="contactChoice1">1-sigma (68%)</label>
-            <br>
-                <input type="radio" id="Choice2"
-                 name="contact" >
-                <label for="contactChoice2">2-sigma (95%)</label>
-            <br>
-                <input type="radio" id="Choice3"
-                 name="contact" >
-                <label for="contactChoice3">3-sigma (99.5%)</label>
-              </div>
+                    <input type="radio" id="Choice1"
+                    name="contact" value = "1" >
+                    <label for="contactChoice1">1-sigma (68%)</label>
+                <br>
+                    <input type="radio" id="Choice2"
+                    name="contact" value = "2">
+                    <label for="contactChoice2">2-sigma (95%)</label>
+                <br>
+                    <input type="radio" id="Choice3"
+                    name="contact" value = "3">
+                    <label for="contactChoice3">3-sigma (99.5%)</label>
+            </div>
         </div>
     </div>
 

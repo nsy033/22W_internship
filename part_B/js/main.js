@@ -1,15 +1,28 @@
 //variables
 
-let formatTime = d3.timeFormat("%Y-%m-%d")
-let parseTime = d3.timeParse("%Y-%m-%d")
-let dayselect = document.getElementById("dayselect")
+let formatTime = d3.timeFormat("%Y/%m/%d")
+let parseTime = d3.timeParse("%Y/%m/%d")
 let dataselect = document.getElementById("dataselect")
 
-let dataset = ["all","null",'app_usage', 'battery', 'bluetooth', 'call_log', 'data_traffic','device_event', 'external_sensor', 'fitness', 'installed_app', 'key_log','location', 'media', 'message', 'notification', 'physical_activity','physical_activity_transition', 'survey', 'wifi']
+let dataset = ['(All)','Null','App Usage', 'Battery', 'Bluetooth', 'Call Log', 'Data Traffic','Device Event', 'External Sensor', 'Fitness', 'Installed App', 'Key Log','Location', 'Media', 'Message', 'Notification', 'Physical Activity','Physical Activity Transition', 'Survey', 'Wifi']
 let dayset = []
 let newDataset = []
 let flag = false
 let selectedItemList = []
+
+let selectedItems = []
+let stadiv=0
+let radiobtns = document.querySelectorAll("input[name='contact']");
+
+
+
+//standard deviation calculator
+function getStandardDeviation (array) {
+    const n = array.length
+    const mean = array.reduce((a, b) => a + b) / n
+    return Math.sqrt(array.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n)
+}
+
 
 //load query for the drop down menu
 
@@ -21,6 +34,7 @@ $(document).ready(function(){
             dataId: i
         })
     }
+    // Load whole list into DropDownList
     $("#dataselect").ikrLoadfSelectCombo({
         List: newDataset,
         DisplayText: "Name",
@@ -33,8 +47,10 @@ $(document).ready(function(){
 
 })
 
-// change event lister for drop down menu 
+// "change" event lister for drop down menu 
 function makeChange(){
+    //Get selected items from DropDownList
+    
     $("#dataselect").ikrGetValuefSelectCombo({
         PrimaryKey: "dataId",
         DataValue: "Name",  //Display Property name
@@ -44,20 +60,23 @@ function makeChange(){
             if (response.status && response.obj != null) {
                 selectedItemList = response.obj;
                 selectedItemList.forEach(function(d){
-                    if (d.Name=="all"){
+                    if (d.Name=="(All)"){
                         $("#dataselect").ikrSetValuefSelectCombo({
                             List: newDataset,
                             MatchField: "Name" 
                         });
                     }
-                    else if (d.Name=="null"){
+                    if (d.Name=="Null"){
                         $("#dataselect").ikrResetfSelectCombo()
                     }
-                    
                 })
             }
     });
+
+    renderChange()
+    
 }
+
 
 //svg size
 
@@ -69,7 +88,7 @@ let width = 400
 const margin = {top: 50, right: 50, bottom: 50, left: 50};
 
 // average line 
-let average = 50 + margin.right //total number of rows/data collection period
+let average = 0//SUM((totalRows of a participant/number of days of data collection) of each participant )/ number of participants
 
 function renderChange(){
 
@@ -99,25 +118,9 @@ function renderChange(){
             d.day=formatTime(new Date (d.day))
 
 
-            // check how many unique days there are
-
-            if (!dayset.includes(d.day)){
-                dayset.push(d.day)
-            }      
+             
             
         })
-
-        //add days to be selected making sure they are only added once
-
-        if (flag===false){
-            for(let i = 0; i < dayset.length; i++) {
-                flag = true
-                let opt = document.createElement('option');
-                opt.value = dayset[i];
-                opt.innerHTML = dayset[i];
-                dayselect.append(dayset[i], opt)
-            }
-        }
 
         //run graph for the first time 
 
@@ -139,24 +142,22 @@ const svg = d3.select("#chart-area")
 
 
 
-
+//transition
 let t = d3.transition().duration(500);
 
+//axis
 let z = d3.scaleLinear()
         .range([height,0])
-        .domain([0,150]) ;
 
 let y = d3.scaleLinear()
         .range([height,0])
-        .domain([0,150]);
+        
 
 let x = d3.scaleLinear()
         .range([0,width])
-        .domain([0,20000])
 
 let averageGroup = svg.append("g")
             .attr("class", "redAxis")
-            .attr("transform", "translate(" + average + "," + margin.top +")")
             
 
 let yGroup = svg.append("g")
@@ -185,7 +186,17 @@ const yLabel = svg.append("text")
 	.attr("text-anchor", "middle")
 	.text("The number of participants")
 
+//standard deviation shade
+
+let stdiv = svg.append("rect")
+    .attr("class", "stdiv")
+    .attr("fill", "grey")
+    .attr("opacity", 0.5)
+    .attr("transform", "translate(" + margin.right + "," + (margin.top) +")")
+
 function update(data){
+    stdiv
+        .attr("width", 0)
 
     //variables
 
@@ -197,23 +208,170 @@ function update(data){
     let newData = []
     let counter = 1
     let counterList = []
+    let participantsWithRow = []
+    let temporaryParticipantsWithRow = {}
 
     // organizing the data, nesting would work too
 
     data.forEach(function(d){
-        if (formatTime(new Date (dayselect.value)) === formatTime(new Date (d.day))){
-            if (!emails.includes(d.email)){
-                emails.push(d.email)   
-            }
+        if (!emails.includes(d.email)){
+            emails.push(d.email)   
         }
     })
+    let tobeAdded = []
+    selectedItemList.forEach(function(d){
+        tobeAdded.push(d.dataId)
+        
+    })
+
+    //editing based on the drop down option
     
     for(let i = 0; i < emails.length; i++) {
         data.forEach(function(d){
-            if (d.email===emails[i] && formatTime(new Date (dayselect.value)) == formatTime(new Date (d.day))){
+            if (d.email===emails[i]){
                 counter+=1
-                sum+=([d.app_usage,d.battery ,d.bluetooth ,d.call_log,d.data_traffic,d.fitness,d.device_event,d.external_sensor,d.installed_app,d.key_log,d.location,d.media,d.message,d.notification,d.physical_activity,d.physical_activity_transition,d.survey,d.wifi].reduce((a, b) => a + b, 0))
+                if ((tobeAdded).includes("0")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }     
+                    sum+=([d.app_usage,d.battery ,d.bluetooth ,d.call_log,d.data_traffic,d.fitness,d.device_event,d.external_sensor,d.installed_app,d.key_log,d.location,d.media,d.message,d.notification,d.physical_activity,d.physical_activity_transition,d.survey,d.wifi].reduce((a, b) => a + b, 0))
+                } else if((tobeAdded).includes("1") && !(tobeAdded).includes("0")){
+                    sum = 0
+                }if((tobeAdded).includes("2") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.app_usage)
+                }if((tobeAdded).includes("3") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.battery)
+                }if((tobeAdded).includes("4") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.bluetooth)
+                }if((tobeAdded).includes("5") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.call_log)
+                }if((tobeAdded).includes("6") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.data_traffic)
+                }if((tobeAdded).includes("7") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.device_event)
+                }if((tobeAdded).includes("8") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.external_sensor)
+                }if((tobeAdded).includes("9") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.fitness)
+                }if((tobeAdded).includes("10") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.installed_app)
+                }if((tobeAdded).includes("11") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.key_log)
+                }if((tobeAdded).includes("12") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.location)
+                }if((tobeAdded).includes("13") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.media)
+                }if((tobeAdded).includes("14") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.message)
+                }if((tobeAdded).includes("15") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.notification)
+                }if((tobeAdded).includes("16") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.physical_activity)
+                }if((tobeAdded).includes("17") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.physical_activity_transition)
+                }if((tobeAdded).includes("18") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.survey)
+                }if((tobeAdded).includes("19") && !(tobeAdded).includes("0") && !(tobeAdded).includes("1")){
+                    // check how many unique days there are
+                    if (!dayset.includes(d.day)){
+                        dayset.push(d.day)
+                    }  
+                    sum+=(d.wifi)
+                }
+                let emailFlagger = 0
+
+                participantsWithRow.forEach(function(elements){
+                    if (elements.email==d.email){
+                        emailFlagger = 1
+                    }else{
+                        emailFlagger = 0
+                    }
+                })
+                if (emailFlagger == 0){
+                    temporaryParticipantsWithRow["email"] = d.email
+                    temporaryParticipantsWithRow["row"] = sum
+                    temporaryParticipantsWithRow["days"] = dayset.length
+                    participantsWithRow.push(temporaryParticipantsWithRow)
+                    temporaryParticipantsWithRow = {}
+                    dayset = []
+                }else{
+                    participantsWithRow.forEach(function(elements){
+                        if (elements.email==d.email){
+                            elements.row+=sum
+                        }
+                    })
+                }
             }
+            
         })
         rows.push(sum)
         counterList.push(counter)
@@ -236,34 +394,98 @@ function update(data){
         jsonFile["row"]=rows[i],
         jsonFile["people"]=numberOfDuplicates[i] // how many people share the same count of rows
         jsonFile["counter"] = counterList[emails.length-1] 
-        average+=(rows[i]/counterList[emails.length-1])
         newData.push(jsonFile)
         jsonFile=[]
         counter =1
         
     }
-
-    //binning
+    
+   
     
     let map = newData.map(function(d){
         return d.row;
     })
+
+    //finding average
+
+    let totalRows = 0
+
+    participantsWithRow.forEach(function(d){
+        totalRows+=(d.row/d.days)
+    })
+
+    if ( isNaN(totalRows)){
+        totalRows = 0
+    }
+
+
+    average = (totalRows / (emails.length)) // here total rows refers to row/day of each person added together
+
+    //setting axis based on average for stdiv shade
+
+    if ((average-getStandardDeviation (map))<0){
+        x.domain([-(getStandardDeviation (map)*2),((map.reduce(function(a, b) {
+            return Math.max(a, b);
+        }, 0))*1.2)])
+    } else {
+        x.domain([0,((map.reduce(function(a, b) {
+            return Math.max(a, b);
+        }, 0))*1.2)])
+    }
+    y.domain([0,(emails.length*2)]);
+    z.domain([0,(emails.length*2)]);
+
+    average = x(totalRows / (emails.length))
+    stadiv = x(getStandardDeviation (map))
+
+    // to adjust the scale difference
+    let multiplier = 0.28    
+
+    //standard diviation shade creator
+
+    let findSelected = ()=>{
+        if (document.querySelector("input[name='contact']:checked").value=="1" && selectedItemList.length!=0){
+            stdiv
+                .attr("x", (average-((stadiv*0.68)*multiplier)))
+                .attr("y", 0)
+                .attr("width",(stadiv*2*0.68)*multiplier)
+                .attr("height", height)
+    
+        }else if(document.querySelector("input[name='contact']:checked").value=="2" && selectedItemList.length!=0){
+            stdiv
+                .attr("x", ((average-((stadiv*0.95))*multiplier)))
+                .attr("y", 0)
+                .attr("width", ((stadiv*2)*0.95)*multiplier)
+                .attr("height", height)
+        }else if(document.querySelector("input[name='contact']:checked").value=="3" && selectedItemList.length!=0){
+            stdiv
+                .attr("x", ((average-((stadiv*0.995))*multiplier)))
+                .attr("y", 0)
+                .attr("width", ((stadiv*2)*0.995)*multiplier)
+                .attr("height", height)
+        }
+    }
+
+    radiobtns.forEach(radiobtn=>{
+        radiobtn.addEventListener("change",findSelected)
+    })
+
+    //binning
+    
     // set the parameters for the histogram
     let histogram = d3.histogram()
         .value(function(d){
             return d
         })
         .domain(x.domain())
-        .thresholds(x.ticks(20)); // then the numbers of bins
+        .thresholds(x.ticks(20)); // the numbers of bins
     
 
     // And apply this function to data to get the bins
     let bins = histogram(map);
+
     
-    
-    // x.domain(d3.extent(newData,function(d){
-    //     return d.row
-    // }))
+  //adjusting axis
     
     let averageAxisCall = d3.axisLeft(z)
                         .ticks(0)
@@ -273,32 +495,26 @@ function update(data){
                         .tickSize((-height)) // -innerHeight would also work
 
     let xAxisCall = d3.axisBottom(x)
-                        .ticks(12)
-                        .tickFormat(d => `${parseInt(d / 1000)}k`)
+                        .ticks(5)
                         .tickSize((-width))
     
-    averageGroup.call(averageAxisCall)
+    if ((map.reduce(function(a, b) {
+        return Math.max(a, b);
+    }, 0))>1000 || (map.reduce(function(a, b) {
+        return Math.max(a, b);
+    }, 0))<-1000){
+        xAxisCall.tickFormat(d => `${parseInt(d / 1000)}k`)
+    }
+                        
+    averageGroup
+        .attr("transform", "translate(" + (margin.right + average) + "," + margin.top +")")
+        .transition(t)
+        .call(averageAxisCall)
     yGroup.transition(t).call(yAxisCall)
     xGroup.transition(t).call(xAxisCall)
-    
-    // sigma area
 
-    // const area = d3.area()
-    //                 .x(function(d){
-    //                     return (x(d.row)+margin.right)
-    //                 }) // how far along in the xaxis does it go
-    //                 .y0(y(0)) //bottom of the area
-    //                 .y1(150)//what is the upper limit;
-
-                    //area graph
-    // svg.append("path")
-    //     .datum(data)
-    //     .attr("d",area)
-    //     .attr("fill","grey")
-    //     .attr("Stroke","grey")
-    //     .attr("stroke-width",2)
-    //     .attr("transform", "translate(" + margin.right + "," + margin.top +")")
     
+                    
     // tool tip
 
     let tip = d3.tip()
@@ -311,24 +527,22 @@ function update(data){
 	svg.call(tip)
 
     //old data
-    let rectangles= svg.selectAll("rect")
+    let rectangles= svg.selectAll(".bar")
             .data(bins)
-            .on("mouseover", tip.show)
-            .on("mouseout", tip.hide)
-            .attr("class","bar")
             
-            // .data(newData,function(d){
-            //     return d.row; //tracks the independent variable when slice is used
-            // })
+            
     
     //remove unused old data
     rectangles.exit().remove()
     
     
-    //enter and manage the exiting
+    //enter and manage the exiting data
     rectangles
         .enter()
         .append("rect")
+        .on("mouseover",tip.show)
+		.on("mouseout",tip.hide)
+        .attr("class","bar")
         .merge(rectangles)
         .transition(t)
         
@@ -341,3 +555,5 @@ function update(data){
         .attr("fill","#008ECC");
         
 }
+
+
