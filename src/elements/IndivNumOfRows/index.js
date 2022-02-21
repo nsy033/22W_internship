@@ -6,6 +6,7 @@ import minute_cnt from '../../data_process/minute_cnt.csv';
 import './index.css';
 import { styled } from '@mui/styles';
 import * as mui from '@mui/material';
+import { BsArrowRightSquare } from "react-icons/bs";
 
 function IndivNumOfRows() {
     // constants
@@ -64,6 +65,9 @@ function IndivNumOfRows() {
         const format_end = date_formatter(end);
         setPeriod(format_start + ' ~ ' + format_end);
     };
+    const valueOverview = () => {
+        window.open(window.document.URL.replace('indiv', 'overview'));
+    }
     const handleRangeBtn = () => {
         setRangeBtnCnt((rangebtncnt) => rangebtncnt + 1);
     };
@@ -331,7 +335,7 @@ function IndivNumOfRows() {
     // render
     return (
         <div className="fragment">
-            <div className="title" style ={{width: '1200px', textAlign: 'center'}}>
+            <div className="title" style ={{width: '1200px', textAlign: 'center', marginLeft: '-20px'}}>
                 <h1>One User's Count of Rows along Time</h1>
                 
                 <mui.FormControl component="fieldset">
@@ -357,13 +361,22 @@ function IndivNumOfRows() {
                             return format_date;}}
                         valueLabelDisplay="auto"
                     />
-                    <mui.Button size="small" variant="text" onClick={handleRangeBtn}>Apply_Period_Setting</mui.Button>
+                    <mui.Button size="small" variant="text" onClick={handleRangeBtn}>Apply Period Setting</mui.Button>
                 </mui.FormControl>
 
-                <mui.FormControl style ={{width: '450px'}}>
+                <mui.FormControl style ={{width: '370px'}}>
                     <mui.FormLabel>Current Focused Period</mui.FormLabel>
                     <mui.FormLabel>{period}</mui.FormLabel>
                 </mui.FormControl>
+
+
+                <mui.Button
+                    size="small" variant="text" onClick={valueOverview}
+                    style ={{marginTop: '-20px', marginLeft: '-10px'}}>
+                    <p style={{whiteSpace: 'pre-wrap', textAlign: 'center'}}>value <br></br> overview </p>
+                    <BsArrowRightSquare style ={{marginLeft: '7px'}}/>
+                </mui.Button>
+
                 
                 <div style ={{textAlign: 'right', marginRight: '100px', marginTop: '12px', marginBottom: '-10px', fontSize: '16px', color: '#4b4950'}}>
                     <text style ={{fontWeight: 'bold'}}>Email: </text>

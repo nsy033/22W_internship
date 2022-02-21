@@ -407,7 +407,7 @@ function DailyNumOfRows() {
                         getAriaValueText= {(value) => {return String(value)}}
                         valueLabelDisplay="auto"
                     />
-                    <mui.Button size="small" variant="text" onClick={handleRangeBtn}>Apply_Range_Setting</mui.Button>
+                    <mui.Button size="small" variant="text" onClick={handleRangeBtn}>Apply Range Setting</mui.Button>
                 </mui.FormControl>
             </div>
             {loading &&
