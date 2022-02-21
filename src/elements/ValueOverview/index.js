@@ -15,7 +15,7 @@ function ValueOverview() {
     const user_id = URLsplit[URLsplit.length - 1];
     const email_addr = "iclab.drm" + user_id + "@kse.kaist.ac.kr";
     const xAxisLabel = 'Time';
-    const margin = { top: 10, bottom: 15, left: 220, right: 40 };
+    const margin = { top: 10, bottom: 15, left: 180, right: 40 };
     const width = 1200;
     const height = 50;
     const minBarWidth = 5;
@@ -46,10 +46,14 @@ function ValueOverview() {
     //     'DEVICE_EVENT', 'FITNESS', 'EMBEDDED_SENSOR', 'EXTERNAL_SENSOR', 'INSTALLED_APP', 'KEY_LOG',
     //     'LOCATION', 'MEDIA', 'MESSAGE', 'NOTIFICATION', 'PHYSICAL_ACTIVITY',
     //     'PHYSICAL_ACTIVITY_TRANSITION', 'SURVEY', 'WIFI'];
-    const category = ['DECIVE_EVENT', 'SOCIAL_INTERACTION'];
+    const category = ['SMARTPHONE_USAGE', 'SOCIAL_INTERACTION'];
     const type_cat = {
-        'BATTERY': 'DECIVE_EVENT', 'DATA_TRAFFIC': 'DECIVE_EVENT',
+        'BATTERY': 'SMARTPHONE_USAGE', 'DATA_TRAFFIC': 'SMARTPHONE_USAGE',
         'CALL_LOG': 'SOCIAL_INTERACTION', 'MESSAGE': 'SOCIAL_INTERACTION'
+    }
+    const cat_type = {
+        'SMARTPHONE_USAGE': ['BATTERY', 'DATA_TRAFFIC'],
+        'SOCIAL_INTERACTION': ['CALL_LOG', 'MESSAGE']
     }
     const classify = {
         'BATTERY': 'num', 'DATA_TRAFFIC': ['num', 'num'],
@@ -149,25 +153,49 @@ function ValueOverview() {
     const handleDatumSelect = (event) => {
         var selected_type = event.target.value;
         if (selected_type == 'ALL') {
-            setTypes([... datumType]);
-            setKeyCnt(cnt => cnt + 1);
+            setTypes([... datumType]); setCats([... category]);
+            
         }
         else if (selected_type == 'NONE') {
-            setTypes([]);
-            setKeyCnt(cnt => cnt + 1);
+            setTypes([]); setCats([]);
         }
         else if (types.includes(selected_type)) {
-            setTypes([
-                ...types.filter(item => item !== selected_type)
-              ]);
-            setKeyCnt(cnt => cnt + 1)
+            setTypes([ ...types.filter(item => item !== selected_type) ]);
+            setCats([...cats.filter(item => item !== type_cat[selected_type])]);
         }
         else {
-            setTypes([
-                ...datumType.filter(item => item == selected_type || types.includes(item))
-              ]);
-            setKeyCnt(cnt => cnt + 1)
+            setTypes([ ...datumType.filter(item => item == selected_type || types.includes(item)) ]);
+            var tmp_types = [ ...datumType.filter(item => item == selected_type || types.includes(item)) ];
+            var flag = new Array(category.length).fill(0);
+            for(var i = 0; i < tmp_types.length; i++) {
+                flag[category.indexOf(type_cat[tmp_types[i]])]++;
+            }
+            const tmp_index = category.indexOf(type_cat[selected_type])
+            if (flag[tmp_index] == cat_type[category[tmp_index]].length) {
+                setCats([ ...category.filter(item => cats.includes(item) || item == type_cat[selected_type]) ]);
+            }
         }
+        setKeyCnt(cnt => cnt + 1);
+    }
+    const handleCatSelect = (event) => {
+        var selected_cat = event.target.value;
+        if (selected_cat == 'ALL') {
+            setTypes([... datumType]);
+            setCats([... category]);
+        }
+        else if (selected_cat == 'NONE') {
+            setTypes([]);
+            setCats([]);
+        }
+        else if (cats.includes(selected_cat)) {
+            setTypes([ ...types.filter(item => type_cat[item] !== selected_cat) ]);
+            setCats([ ...cats.filter(item => item !== selected_cat) ]);
+        }
+        else {
+            setTypes([ ...datumType.filter(item => type_cat[item] == selected_cat || types.includes(item)) ]);
+            setCats([ ...category.filter(item => item == selected_cat || cats.includes(item)) ]);
+        }
+        setKeyCnt(cnt => cnt + 1);
     }
 
 
@@ -185,7 +213,7 @@ function ValueOverview() {
     var [types, setTypes] = useState([
         'BATTERY', 'DATA_TRAFFIC', 'CALL_LOG', 'MESSAGE']);
     var [cats, setCats] = useState([
-        'device_event', 'social_interaction']);
+        'SMARTPHONE_USAGE', 'SOCIAL_INTERACTION']);
 
     // use effect
 
@@ -362,8 +390,6 @@ function ValueOverview() {
             .attr('x', innerWidth / 2)
             .attr('fill', 'black')
             .text(xAxisLabel);
-        console.log(index)
-
     }}, [loading, keycnt, min_minute, max_minute, rangebtncnt]);
     
     // render
@@ -372,14 +398,57 @@ function ValueOverview() {
             <div className="title" style ={{width: '1200px', textAlign: 'center', marginLeft: '-20px'}}>
                 <h1>One User's Value Overview along Time</h1>
 
+                <mui.FormControl style ={{marginTop: '10px', marginLeft: '140px'}}>
+                    <mui.InputLabel id="multiple-type-label">Category</mui.InputLabel>
+                    <MySelect
+                        labelId="multiple-type-label"
+                        id="catselect"
+                        label="Category"
+                        value={cats}
+                        defaultValue={""}
+                        onChange={handleCatSelect}
+                        input={<mui.OutlinedInput label="Tag" />}
+                        renderValue={ (selected) =>
+                                cats.length == category.length
+                                ? '(ALL)'
+                                : selected.join(', ').replaceAll('_', ' ').toUpperCase()
+                            }
+                        MenuProps={MenuProps}
+                    >
+                        <mui.MenuItem
+                            value={'ALL'}
+                            key={'ALL'}
+                            >
+                            <mui.Checkbox checked={cats.length == category.length} />
+                            <mui.ListItemText primary={'(ALL)'} />
+                        </mui.MenuItem>
+                        <mui.MenuItem
+                            value={'NONE'}
+                            key={'NONE'}
+                            >
+                            <mui.Checkbox checked={cats.length == 0} />
+                            <mui.ListItemText primary={'(NONE)'} />
+                        </mui.MenuItem>
+                    {category.map(element => (
+                        <mui.MenuItem
+                            value={element}
+                            key={element}
+                            >
+                            <mui.Checkbox checked={cats.indexOf(element) > -1} />
+                            <mui.ListItemText primary={element.replaceAll('_', ' ').toUpperCase()} />
+                        </mui.MenuItem>
+                    ))}
+                    </MySelect>
+                </mui.FormControl>
 
-                <mui.FormControl style ={{marginTop: '15px', marginRight: '10px'}}>
+                <mui.FormControl style ={{marginTop: '10px', marginRight: '10px'}}>
                     <mui.InputLabel id="multiple-type-label">Type</mui.InputLabel>
                     <MySelect
                         labelId="multiple-type-label"
                         id="typeselect"
                         label="Type"
                         value={types}
+                        defaultValue={""}
                         onChange={handleDatumSelect}
                         input={<mui.OutlinedInput label="Tag" />}
                         renderValue={ (selected) =>
@@ -438,8 +507,8 @@ function ValueOverview() {
                 </mui.FormControl>
                 
                 <div style ={{textAlign: 'right', marginTop: '12px', marginBottom: '-10px', fontSize: '16px', color: '#4b4950'}}>
-                    <text style ={{fontWeight: 'bold'}}>Email: </text>
-                    <text>{email_addr}</text>
+                    <span style ={{fontWeight: 'bold'}}>Email: </span>
+                    <span>{email_addr}</span>
                 </div>
             </div>
         {(loading) &&
