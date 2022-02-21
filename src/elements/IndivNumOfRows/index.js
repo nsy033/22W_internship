@@ -379,8 +379,8 @@ function IndivNumOfRows() {
 
                 
                 <div style ={{textAlign: 'right', marginRight: '100px', marginTop: '12px', marginBottom: '-10px', fontSize: '16px', color: '#4b4950'}}>
-                    <text style ={{fontWeight: 'bold'}}>Email: </text>
-                    <text>{email_addr}</text>
+                    <span style ={{fontWeight: 'bold'}}>Email: </span>
+                    <span>{email_addr}</span>
                 </div>
             </div>
         {(Dloading || Hloading || Mloading) &&
