@@ -15,8 +15,9 @@ function ValueOverview() {
     const user_id = URLsplit[URLsplit.length - 1];
     const email_addr = "iclab.drm" + user_id + "@kse.kaist.ac.kr";
     const xAxisLabel = 'Time';
-    const margin = { top: 10, bottom: 15, left: 180, right: 40 };
+    const margin = { top: 10, bottom: 15, left: 220, right: 40 };
     const width = 1200;
+    const legend_width = 200;
     const height = 50;
     const minBarWidth = 4;
     const minDistance = 1000 * 60 * 60 * 6;
@@ -59,13 +60,16 @@ function ValueOverview() {
         'BATTERY': ['num'], 'DATA_TRAFFIC': ['num', 'num'],
         'CALL_LOG': ['cat_b'], 'MESSAGE': ['cat_a']
     }
+    const cat_colors = {
+        'SMARTPHONE_USAGE': "#F2BA4E", 'SOCIAL_INTERACTION': '#5ea280'
+    }
     const colors = {
         'BATTERY': ["#F2BA4E"], 'DATA_TRAFFIC': ['#F3D25B', '#F1CB44'],
-        'CALL_LOG': {'INCOMING': "#75b368", 'OUTGOING': "#94C09C", 'MISSED': "#658d61", 'REJECTED': "#bdccb9"},
-        'MESSAGE': {'INBOX': "#78925c", 'SENT': "#376830"}
+        'CALL_LOG': {'INCOMING': "#76CBA1", 'OUTGOING': "#5ea280", 'REJECTED': "#3b6550", 'MISSED': "#91d5b3"},
+        'MESSAGE': {'INBOX': "#65c97d", 'SENT': "#257037"}
     }
     const colored_field = {
-        'BATTERY': ['eval_level'], 'DATA_TRAFFIC': ['eval_rxBytes', 'eval_txBytes'],
+        'BATTERY': ['eval_level'], 'DATA_TRAFFIC': ['eval_txBytes', 'eval_rxBytes'],
         'CALL_LOG': ['eval_type'], 'MESSAGE': ['eval_messagebox']
     }
 
@@ -274,8 +278,10 @@ function ValueOverview() {
             .range([0, innerWidth])
             .nice();
 
+        var cat_flag = "";
         // iterate for each datum types
         for (var i = 0; i < types.length; i++) {
+            const this_type = data.filter((row) => { return row.datumType == types[i]; });
             const tydata = intime_data.filter(function(row) {
                 return row.datumType == types[i];
             });
@@ -291,27 +297,37 @@ function ValueOverview() {
                 const yAxisG = g.append('g').attr("class", "appended");
                 yAxisG.selectAll('.domain').remove();
                 yAxisG.selectAll('line').attr("stroke", "rgb(187 189 201)");
+
+                if (!cat_flag.includes(type_cat[types[i]])) {
+                    cat_flag += type_cat[types[i]] + ' ';
+                    // category name box
+                    yAxisG
+                        .append('g').attr("class", "appended").attr('id', 'categoryBox')
+                    yAxisG.select('#categoryBox')
+                        .append('text').attr("class", "appended")
+                        .attr('fill', 'black').attr('text-anchor', 'center')
+                        .attr('x', -200).attr('y', 3)
+                        .style('font-size', '10px')
+                        .text(() => { return type_cat[types[i]].replace('_', ' ')} )
+                    yAxisG.select('#categoryBox')
+                        .append('rect').attr("class", "appended")
+                        .attr('x', -210).attr('y', height / 2 - 34).attr('height', '15px').attr('rx', 7).attr('ry', 7)
+                        .attr('width', () => {
+                            return Number(yAxisG.selectAll('text')._groups[0][0].textLength.baseVal.valueAsString) + 18})
+                        .attr('fill', 'transparent').style('stroke', cat_colors[type_cat[types[i]]]).style('stroke-width', '2px')
+                }
                 yAxisG // datum type name
                     .append('text').attr("class", "appended")
-                    .attr('class', 'axis-label')
-                    .attr('y', height / 2 - 10)
-                    .attr('x', -20)
-                    .attr('fill', 'black')
-                    .attr('text-anchor', `end`)
-                    .style('font-weight', 'bold')
-                    .style('font-size', '12px')
+                    .attr('x', -15).attr('y', height / 2 - 5)
+                    .attr('fill', 'black').attr('text-anchor', `end`)
+                    .style('font-size', '12px').style('font-weight', 'bold')
                     .text(types[i].replaceAll('_', ' '));
-                yAxisG
+                yAxisG // field name
                     .append('text').attr("class", "appended")
-                    .attr('class', 'axis-label')
-                    .attr('y', height / 2 + 5)
-                    .attr('x', -20)
-                    .attr('fill', 'grey')
-                    .attr('text-anchor', `end`)
+                    .attr('x', -15).attr('y', height / 2 + 10)
+                    .attr('fill', 'grey').attr('text-anchor', `end`)
                     .style('font-size', '12px')
-                    .text(() => {
-                        return fields[field].replace('eval_', '')}
-                    );
+                    .text(() => { return fields[field].replace('eval_', '')} );
 
                 var xAixs = d3.axisBottom(xScale).ticks(4).tickSize(-innerHeight).tickPadding(25).tickFormat('');
                 const xAxisG = g
@@ -331,7 +347,7 @@ function ValueOverview() {
                     .selectAll("rect")
                     .data(tydata)
                     .enter()
-                    .append("rect").attr("class", "appended")
+                    .append("rect").attr("class", "appended").attr('r', 0)
                     .attr("fill", function(d) { 
                         if (classify[types[i]][field].includes('cat')) {
                             return colors[types[i]][d[fields[field]]];
@@ -353,7 +369,10 @@ function ValueOverview() {
                         if (classify[types[i]][field] == 'cat_a') { return minBarWidth; }
                         else if (classify[types[i]][field] == 'cat_b' || classify[types[i]][field] == 'num') {
                             if (d.eval_duration != undefined) {
-                                return Math.max(minBarWidth, 1200 * d.eval_duration * 1000 / (range[1] - range[0]));
+                                let val = Math.max(minBarWidth, 1200 * d.eval_duration * 1000 / (range[1] - range[0]));
+                                let xpos = xScale(xValue(d))
+                                if (xpos + val > 980) return 980 - xpos;
+                                else return val;
                             }
                             else return minBarWidth;
                         }
@@ -366,13 +385,63 @@ function ValueOverview() {
                     })
                     .on('mouseenter', (event, datum) => handleTooltipShow(event, datum))
                     .on('mouseleave', (event, datum) => handleTooltipHide(event, datum));
-                
+
+                if (classify[types[i]][field].includes('num')) {
+                    const new_group = g.append('g').attr("class", "appended")
+                    const myColor = d3.scaleLinear()
+                        .range(["white", colors[types[i]][field]])
+                        .domain([0, 22]);
+
+                    for (var j = 0; j < 23; j++) {
+                        new_group
+                            .append("rect").attr("class", "appended").attr('r', 0)
+                            .attr("fill", myColor(j))
+                            .attr("x", 990).attr("y",  - margin.top + 1 + ((22 - j) * 2))
+                            .attr("width", 10).attr("height", 2);
+                        new_group
+                            .append("rect").attr("class", "appended").attr('r', 0)
+                            .attr("fill", 'transparent').attr("stroke", '#bcbcbc')
+                            .attr("x", 990).attr("y",  - margin.top + 1)
+                            .attr("width", 10).attr("height", height - 4);
+                        new_group
+                            .append("text").attr("class", "appended")
+                            .attr("fill", '#5b5b5b')
+                            .attr("x", 1005).attr("y",  - margin.top + (12 * 0) + 9)
+                            .attr('font-size', '9px').attr('font-weight', 'lighter')
+                            .text(() => {
+                                let max_val = d3.max(this_type, d => Number(d[fields[field]]));
+                                return max_val.toLocaleString()});
+                        new_group
+                            .append("text").attr("class", "appended")
+                            .attr("fill", '#5b5b5b')
+                            .attr("x", 1005).attr("y",  - margin.top + (12 * 3) + 9)
+                            .attr('font-size', '9px').attr('font-weight', 'lighter')
+                            .text(() => {
+                                let min_val = d3.min(this_type, d => Number(d[fields[field]]));
+                                return min_val.toLocaleString()});
+                    }
+                } else {
+                    const new_group = g.append('g').attr("class", "appended")
+                    const cat_values = Object.keys(colors[types[i]])
+                    for (var j = 0; j < Math.min(cat_values.length, 4); j++) {
+                        new_group
+                            .append("rect").attr("class", "appended").attr('r', 0)
+                            .attr("fill", colors[types[i]][cat_values[j]])
+                            .attr("x", 990).attr("y",  - margin.top + (12 * j))
+                            .attr("width", 10).attr("height", 10);
+                        new_group
+                            .append("text").attr("class", "appended")
+                            .attr("fill", '#5b5b5b')
+                            .attr("x", 1005).attr("y",  - margin.top + (12 * j) + 8)
+                            .attr('font-size', '9px').text(cat_values[j]);
+                    }
+                }
 
                 svg.append('path').attr('class', 'appended')
                     .attr('width', width)
                     .attr('stroke', 'grey')
                     .attr('stroke-width', '0.5')
-                    .attr('d', 'M 210 '+(index * height - 2)+' L'+ width+' '+(index * height - 2))
+                    .attr('d', 'M 220 '+(index * height - 2)+' L'+ width+' '+(index * height - 2))
             }
         }
 
@@ -398,16 +467,16 @@ function ValueOverview() {
     // render
     return (
         <div className="fragment">
-            <div className="title" style ={{width: '1200px', textAlign: 'center', marginLeft: '-20px'}}>
-                <h1>One User's Value Overview along Time</h1>
+            <div className="title" style ={{width: '1200px', textAlign: 'center', marginLeft: '-12px'}}>
+                <h1 style ={{marginBottom: '30px'}}>One User's Value Overview along Time</h1>
 
-                <mui.FormControl style ={{marginTop: '10px', marginLeft: '140px'}}>
+                <mui.FormControl style ={{marginLeft: '140px'}}>
                     <mui.InputLabel id="multiple-type-label">Category</mui.InputLabel>
                     <MySelect
                         labelId="multiple-type-label"
                         id="catselect"
                         label="Category"
-                        defaultValue={'(ALL)'}
+                        defaultValue='none'
                         onChange={handleCatSelect}
                         input={<mui.OutlinedInput label="Tag" />}
                         renderValue={ () =>
@@ -431,6 +500,7 @@ function ValueOverview() {
                             <mui.Checkbox checked={cats.length == 0} />
                             <mui.ListItemText primary={'(NONE)'} />
                         </mui.MenuItem>
+                    <mui.MenuItem value={'none'} key={'none'} selected disabled hidden/>
                     {category.map(element => (
                         <mui.MenuItem
                             value={element}
@@ -443,13 +513,13 @@ function ValueOverview() {
                     </MySelect>
                 </mui.FormControl>
 
-                <mui.FormControl style ={{marginTop: '10px', marginRight: '10px'}}>
+                <mui.FormControl style ={{marginRight: '10px'}}>
                     <mui.InputLabel id="multiple-type-label">Type</mui.InputLabel>
                     <MySelect
                         labelId="multiple-type-label"
                         id="typeselect"
                         label="Type"
-                        defaultValue='(ALL)'
+                        defaultValue='none'
                         onChange={handleDatumSelect}
                         input={<mui.OutlinedInput label="Tag" />}
                         renderValue={ () =>
@@ -473,6 +543,7 @@ function ValueOverview() {
                             <mui.Checkbox checked={types.length == 0} />
                             <mui.ListItemText primary={'(NONE)'} />
                         </mui.MenuItem>
+                    <mui.MenuItem value={'none'} key={'none'} selected disabled hidden/>
                     {datumType.map(element => (
                         <mui.MenuItem
                             value={element}
@@ -507,7 +578,7 @@ function ValueOverview() {
                     <mui.FormLabel>{period}</mui.FormLabel>
                 </mui.FormControl>
                 
-                <div style ={{textAlign: 'right', marginTop: '12px', marginBottom: '-10px', fontSize: '16px', color: '#4b4950'}}>
+                <div style ={{marginTop: '12px', marginBottom: '-10px', textAlign: 'right', fontSize: '16px', color: '#4b4950'}}>
                     <span style ={{fontWeight: 'bold'}}>Email: </span>
                     <span>{email_addr}</span>
                 </div>
@@ -522,7 +593,7 @@ function ValueOverview() {
         }
         {!(loading) &&
             <>
-            <svg ref = {svgRef} width={width} height={height}>
+            <svg ref = {svgRef} width={width + legend_width} height={height}>
 
                 <mui.Tooltip enterDelay={100} leaveDelay={500} followCursor arrow id='tooltip'
                     title={ tooltip_text.length <= 0? '' : <p style={{whiteSpace: 'pre-wrap', textAlign: 'center'}}>{tooltip_text}</p> }>
