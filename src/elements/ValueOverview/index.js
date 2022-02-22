@@ -18,7 +18,7 @@ function ValueOverview() {
     const margin = { top: 10, bottom: 15, left: 180, right: 40 };
     const width = 1200;
     const height = 50;
-    const minBarWidth = 5;
+    const minBarWidth = 4;
     const minDistance = 1000 * 60 * 60 * 6;
     const ITEM_HEIGHT = 48;
     const ITEM_PADDING_TOP = 8;
@@ -56,8 +56,8 @@ function ValueOverview() {
         'SOCIAL_INTERACTION': ['CALL_LOG', 'MESSAGE']
     }
     const classify = {
-        'BATTERY': 'num', 'DATA_TRAFFIC': ['num', 'num'],
-        'CALL_LOG': 'cat_b', 'MESSAGE': 'cat_a'
+        'BATTERY': ['num'], 'DATA_TRAFFIC': ['num', 'num'],
+        'CALL_LOG': ['cat_b'], 'MESSAGE': ['cat_a']
     }
     const colors = {
         'BATTERY': ["#F2BA4E"], 'DATA_TRAFFIC': ['#F3D25B', '#F1CB44'],
@@ -152,11 +152,11 @@ function ValueOverview() {
 
     const handleDatumSelect = (event) => {
         var selected_type = event.target.value;
-        if (selected_type == 'ALL') {
+        if (selected_type == '(ALL)') {
             setTypes([... datumType]); setCats([... category]);
             
         }
-        else if (selected_type == 'NONE') {
+        else if (selected_type == '(NONE)') {
             setTypes([]); setCats([]);
         }
         else if (types.includes(selected_type)) {
@@ -179,11 +179,11 @@ function ValueOverview() {
     }
     const handleCatSelect = (event) => {
         var selected_cat = event.target.value;
-        if (selected_cat == 'ALL') {
+        if (selected_cat == '(ALL)') {
             setTypes([... datumType]);
             setCats([... category]);
         }
-        else if (selected_cat == 'NONE') {
+        else if (selected_cat == '(NONE)') {
             setTypes([]);
             setCats([]);
         }
@@ -326,20 +326,23 @@ function ValueOverview() {
                     domain_max = d3.max(tydata, d => Number(d[fields[field]]))
                     domain_min = d3.min(tydata, d => Number(d[fields[field]]))
                 }
-
+                
                 g.append('g').attr("class", "appended")
                     .selectAll("rect")
                     .data(tydata)
                     .enter()
                     .append("rect").attr("class", "appended")
                     .attr("fill", function(d) { 
-                        if (classify[types[i]].includes('cat')) {
+                        if (classify[types[i]][field].includes('cat')) {
                             return colors[types[i]][d[fields[field]]];
                         }
-                        else if (classify[types[i]].includes('num')) {
-                            var myColor = d3.scaleSqrt()
+                        else if (classify[types[i]][field].includes('num')) {
+                            var myColor
+                            if (domain_max - domain_min > 10000) myColor = d3.scaleLog();
+                            else myColor = d3.scaleLinear();
+                            myColor
                                 .range(["white", colors[types[i]][field]])
-                                .domain([domain_min, domain_max])
+                                .domain([1, domain_max])
                             return myColor(d[fields[field]])
                         }
                     })
@@ -347,8 +350,8 @@ function ValueOverview() {
                         return xScale(xValue(d)); })
                     .attr("y",  - margin.top - 2)
                     .attr("width", function(d) { 
-                        if (classify[types[i]] == 'cat_a') { return minBarWidth; }
-                        else if (classify[types[i]] == 'cat_b' || classify[types[i]] == 'num') {
+                        if (classify[types[i]][field] == 'cat_a') { return minBarWidth; }
+                        else if (classify[types[i]][field] == 'cat_b' || classify[types[i]][field] == 'num') {
                             if (d.eval_duration != undefined) {
                                 return Math.max(minBarWidth, 1200 * d.eval_duration * 1000 / (range[1] - range[0]));
                             }
@@ -404,27 +407,26 @@ function ValueOverview() {
                         labelId="multiple-type-label"
                         id="catselect"
                         label="Category"
-                        value={cats}
-                        defaultValue={""}
+                        defaultValue={'(ALL)'}
                         onChange={handleCatSelect}
                         input={<mui.OutlinedInput label="Tag" />}
-                        renderValue={ (selected) =>
+                        renderValue={ () =>
                                 cats.length == category.length
                                 ? '(ALL)'
-                                : selected.join(', ').replaceAll('_', ' ').toUpperCase()
+                                : cats.toString().replaceAll('_', ' ').toUpperCase()
                             }
                         MenuProps={MenuProps}
                     >
                         <mui.MenuItem
-                            value={'ALL'}
-                            key={'ALL'}
+                            value={'(ALL)'}
+                            key={'(ALL)'}
                             >
                             <mui.Checkbox checked={cats.length == category.length} />
                             <mui.ListItemText primary={'(ALL)'} />
                         </mui.MenuItem>
                         <mui.MenuItem
-                            value={'NONE'}
-                            key={'NONE'}
+                            value={'(NONE)'}
+                            key={'(NONE)'}
                             >
                             <mui.Checkbox checked={cats.length == 0} />
                             <mui.ListItemText primary={'(NONE)'} />
@@ -447,27 +449,26 @@ function ValueOverview() {
                         labelId="multiple-type-label"
                         id="typeselect"
                         label="Type"
-                        value={types}
-                        defaultValue={""}
+                        defaultValue='(ALL)'
                         onChange={handleDatumSelect}
                         input={<mui.OutlinedInput label="Tag" />}
-                        renderValue={ (selected) =>
+                        renderValue={ () =>
                                 types.length == datumType.length
                                 ? '(ALL)'
-                                : selected.join(', ').replaceAll('_', ' ').toUpperCase()
+                                : types.toString().replaceAll('_', ' ').toUpperCase()
                             }
                         MenuProps={MenuProps}
                     >
                         <mui.MenuItem
-                            value={'ALL'}
-                            key={'ALL'}
+                            value={'(ALL)'}
+                            key={'(ALL)'}
                             >
                             <mui.Checkbox checked={types.length == datumType.length} />
                             <mui.ListItemText primary={'(ALL)'} />
                         </mui.MenuItem>
                         <mui.MenuItem
-                            value={'NONE'}
-                            key={'NONE'}
+                            value={'(NONE)'}
+                            key={'(NONE)'}
                             >
                             <mui.Checkbox checked={types.length == 0} />
                             <mui.ListItemText primary={'(NONE)'} />
