@@ -5,6 +5,8 @@ import eval_battery from '../../data_process/eval_dataset/eval_battery.csv';
 import eval_data_traffic from '../../data_process/eval_dataset/eval_data_traffic.csv';
 import eval_message from '../../data_process/eval_dataset/eval_message.csv';
 import eval_call_log from '../../data_process/eval_dataset/eval_call_log.csv';
+import eval_location from '../../data_process/eval_dataset/eval_location.csv';
+import eval_physical_activity_transition from '../../data_process/eval_dataset/eval_physical_activity_transition.csv';
 import './index.css';
 import { styled } from '@mui/styles';
 import * as mui from '@mui/material';
@@ -42,35 +44,42 @@ function ValueOverview() {
 
 
     // datum type structure
-    const datumType = ['BATTERY', 'DATA_TRAFFIC', 'CALL_LOG', 'MESSAGE'];
+    const datumType = ['BATTERY', 'DATA_TRAFFIC', 'CALL_LOG', 'MESSAGE', 'LOCATION', 'PHYSICAL_ACTIVITY_TRANSITION'];
     // const datumType = ['APP_USAGE_EVENT', 'BATTERY', 'BLUETOOTH', 'CALL_LOG', 'DATA_TRAFFIC',
     //     'DEVICE_EVENT', 'FITNESS', 'EMBEDDED_SENSOR', 'EXTERNAL_SENSOR', 'INSTALLED_APP', 'KEY_LOG',
     //     'LOCATION', 'MEDIA', 'MESSAGE', 'NOTIFICATION', 'PHYSICAL_ACTIVITY',
     //     'PHYSICAL_ACTIVITY_TRANSITION', 'SURVEY', 'WIFI'];
-    const category = ['SMARTPHONE_USAGE', 'SOCIAL_INTERACTION'];
+    const category = ['SMARTPHONE_USAGE', 'SOCIAL_INTERACTION', 'PHYSICAL_ACTIVITY'];
     const type_cat = {
         'BATTERY': 'SMARTPHONE_USAGE', 'DATA_TRAFFIC': 'SMARTPHONE_USAGE',
-        'CALL_LOG': 'SOCIAL_INTERACTION', 'MESSAGE': 'SOCIAL_INTERACTION'
+        'CALL_LOG': 'SOCIAL_INTERACTION', 'MESSAGE': 'SOCIAL_INTERACTION',
+        'LOCATION': 'PHYSICAL_ACTIVITY', 'PHYSICAL_ACTIVITY_TRANSITION': 'PHYSICAL_ACTIVITY'
     }
     const cat_type = {
         'SMARTPHONE_USAGE': ['BATTERY', 'DATA_TRAFFIC'],
-        'SOCIAL_INTERACTION': ['CALL_LOG', 'MESSAGE']
+        'SOCIAL_INTERACTION': ['CALL_LOG', 'MESSAGE'],
+        'PHYSICAL_ACTIVITY': ['LOCATION', 'PHYSICAL_ACTIVITY_TRANSITION']
     }
     const classify = {
         'BATTERY': ['num'], 'DATA_TRAFFIC': ['num', 'num'],
-        'CALL_LOG': ['cat_b'], 'MESSAGE': ['cat_a']
+        'CALL_LOG': ['cat_b'], 'MESSAGE': ['cat_a'],
+        'LOCATION': ['num'], 'PHYSICAL_ACTIVITY_TRANSITION': ['cat_a']
     }
     const cat_colors = {
-        'SMARTPHONE_USAGE': "#F2BA4E", 'SOCIAL_INTERACTION': '#5ea280'
+        'SMARTPHONE_USAGE': "#F2BA4E", 'SOCIAL_INTERACTION': '#5ea280', 'PHYSICAL_ACTIVITY': '#2688AC'
     }
     const colors = {
         'BATTERY': ["#F2BA4E"], 'DATA_TRAFFIC': ['#F3D25B', '#F1CB44'],
-        'CALL_LOG': {'INCOMING': "#76CBA1", 'OUTGOING': "#5ea280", 'REJECTED': "#3b6550", 'MISSED': "#91d5b3"},
-        'MESSAGE': {'INBOX': "#65c97d", 'SENT': "#257037"}
+        'CALL_LOG': {'MISSED': "#91d5b3", 'INCOMING': "#76CBA1", 'OUTGOING': "#5ea280", 'REJECTED': "#3b6550"},
+        'MESSAGE': {'INBOX': "#65c97d", 'SENT': "#257037"}, 'LOCATION': ["#2688AC"], 
+        'PHYSICAL_ACTIVITY_TRANSITION': {
+            'STILL': '#cfe2f3', 'TILTING': '#9fc5e8', 'WALKING': '#6fa8dc',
+            'RUNNING': '#3d85c6', 'ON_BICYCLE': '#0b5394', 'IN_VEHICLE': '#073763'}
     }
     const colored_field = {
         'BATTERY': ['eval_level'], 'DATA_TRAFFIC': ['eval_txBytes', 'eval_rxBytes'],
-        'CALL_LOG': ['eval_type'], 'MESSAGE': ['eval_messagebox']
+        'CALL_LOG': ['eval_type'], 'MESSAGE': ['eval_messagebox'],
+        'LOCATION': ['eval_speed'], 'PHYSICAL_ACTIVITY_TRANSITION': ['eval_type']
     }
 
 
@@ -215,9 +224,9 @@ function ValueOverview() {
     var [tooltip_text, setTooltip] = useState('');
     var [keycnt, setKeyCnt] = useState(0);
     var [types, setTypes] = useState([
-        'BATTERY', 'DATA_TRAFFIC', 'CALL_LOG', 'MESSAGE']);
+        'BATTERY', 'DATA_TRAFFIC', 'CALL_LOG', 'MESSAGE', 'LOCATION', 'PHYSICAL_ACTIVITY_TRANSITION']);
     var [cats, setCats] = useState([
-        'SMARTPHONE_USAGE', 'SOCIAL_INTERACTION']);
+        'SMARTPHONE_USAGE', 'SOCIAL_INTERACTION', 'PHYSICAL_ACTIVITY']);
 
     // use effect
 
@@ -230,7 +239,9 @@ function ValueOverview() {
             d3.csv(eval_battery),
             d3.csv(eval_data_traffic),
             d3.csv(eval_call_log),
-            d3.csv(eval_message)
+            d3.csv(eval_message),
+            d3.csv(eval_location),
+            d3.csv(eval_physical_activity_transition)
         ]).then(function(allData) {
             var merged = d3.merge(allData);
 
@@ -336,12 +347,9 @@ function ValueOverview() {
                     .attr('transform', `translate(0, ${innerHeight})`);
                 xAxisG.select('.domain').remove();
                 xAxisG.selectAll('line').attr("stroke", "rgb(187 189 201)");
-
-                var domain_max = NaN, domain_min = NaN;
-                if (classify[types[i]].includes('num')) {
-                    domain_max = d3.max(tydata, d => Number(d[fields[field]]))
-                    domain_min = d3.min(tydata, d => Number(d[fields[field]]))
-                }
+                
+                const max_val = d3.max(this_type, d => Number(d[fields[field]]));
+                const min_val = d3.min(this_type, d => Number(d[fields[field]]));
                 
                 g.append('g').attr("class", "appended")
                     .selectAll("rect")
@@ -353,12 +361,14 @@ function ValueOverview() {
                             return colors[types[i]][d[fields[field]]];
                         }
                         else if (classify[types[i]][field].includes('num')) {
+                            if(types[i] == 'LOCATION') console.log()
+
                             var myColor
-                            if (domain_max - domain_min > 10000) myColor = d3.scaleLog();
+                            if (max_val - min_val > 10000) myColor = d3.scaleLog();
                             else myColor = d3.scaleLinear();
                             myColor
                                 .range(["white", colors[types[i]][field]])
-                                .domain([1, domain_max])
+                                .domain([1, max_val])
                             return myColor(d[fields[field]])
                         }
                     })
@@ -396,43 +406,39 @@ function ValueOverview() {
                         new_group
                             .append("rect").attr("class", "appended").attr('r', 0)
                             .attr("fill", myColor(j))
-                            .attr("x", 990).attr("y",  - margin.top + 1 + ((22 - j) * 2))
+                            .attr("x", 990).attr("y",  - margin.top + ((22 - j) * 2))
                             .attr("width", 10).attr("height", 2);
                         new_group
                             .append("rect").attr("class", "appended").attr('r', 0)
                             .attr("fill", 'transparent').attr("stroke", '#bcbcbc')
-                            .attr("x", 990).attr("y",  - margin.top + 1)
+                            .attr("x", 990).attr("y",  - margin.top)
                             .attr("width", 10).attr("height", height - 4);
                         new_group
                             .append("text").attr("class", "appended")
                             .attr("fill", '#5b5b5b')
                             .attr("x", 1005).attr("y",  - margin.top + (12 * 0) + 9)
                             .attr('font-size', '9px').attr('font-weight', 'lighter')
-                            .text(() => {
-                                let max_val = d3.max(this_type, d => Number(d[fields[field]]));
-                                return max_val.toLocaleString()});
+                            .text(() => {return max_val.toLocaleString()});
                         new_group
                             .append("text").attr("class", "appended")
                             .attr("fill", '#5b5b5b')
                             .attr("x", 1005).attr("y",  - margin.top + (12 * 3) + 9)
                             .attr('font-size', '9px').attr('font-weight', 'lighter')
-                            .text(() => {
-                                let min_val = d3.min(this_type, d => Number(d[fields[field]]));
-                                return min_val.toLocaleString()});
+                            .text(() => {return min_val.toLocaleString()});
                     }
                 } else {
                     const new_group = g.append('g').attr("class", "appended")
                     const cat_values = Object.keys(colors[types[i]])
-                    for (var j = 0; j < Math.min(cat_values.length, 4); j++) {
+                    for (var j = 0; j < cat_values.length; j++) {
                         new_group
                             .append("rect").attr("class", "appended").attr('r', 0)
                             .attr("fill", colors[types[i]][cat_values[j]])
-                            .attr("x", 990).attr("y",  - margin.top + (12 * j))
+                            .attr("x", 990 + 65 * Math.trunc((j)/4)).attr("y",  - margin.top + (12 * (j%4)))
                             .attr("width", 10).attr("height", 10);
                         new_group
                             .append("text").attr("class", "appended")
                             .attr("fill", '#5b5b5b')
-                            .attr("x", 1005).attr("y",  - margin.top + (12 * j) + 8)
+                            .attr("x", 1005 + 65 * Math.trunc((j)/4)).attr("y",  - margin.top + (12 * (j%4)) + 8)
                             .attr('font-size', '9px').text(cat_values[j]);
                     }
                 }
