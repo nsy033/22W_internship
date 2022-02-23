@@ -1,12 +1,19 @@
 /* eslint-disable no-loop-func */
 import React, { useRef, useEffect, useState } from 'react';
 import * as d3 from 'd3';
+import eval_bluetooth from '../../data_process/eval_dataset/eval_bluetooth.csv';
+import eval_wifi from '../../data_process/eval_dataset/eval_wifi.csv';
 import eval_battery from '../../data_process/eval_dataset/eval_battery.csv';
 import eval_data_traffic from '../../data_process/eval_dataset/eval_data_traffic.csv';
+import eval_device_event from '../../data_process/eval_dataset/eval_device_event.csv';
 import eval_message from '../../data_process/eval_dataset/eval_message.csv';
 import eval_call_log from '../../data_process/eval_dataset/eval_call_log.csv';
+import eval_installed_app from '../../data_process/eval_dataset/eval_installed_app.csv';
 import eval_location from '../../data_process/eval_dataset/eval_location.csv';
+import eval_fitness from '../../data_process/eval_dataset/eval_fitness.csv';
+import eval_physical_activity from '../../data_process/eval_dataset/eval_physical_activity.csv';
 import eval_physical_activity_transition from '../../data_process/eval_dataset/eval_physical_activity_transition.csv';
+import eval_survey from '../../data_process/eval_dataset/eval_survey.csv';
 import './index.css';
 import { styled } from '@mui/styles';
 import * as mui from '@mui/material';
@@ -44,42 +51,59 @@ function ValueOverview() {
 
 
     // datum type structure
-    const datumType = ['BATTERY', 'DATA_TRAFFIC', 'CALL_LOG', 'MESSAGE', 'LOCATION', 'PHYSICAL_ACTIVITY_TRANSITION'];
+    const datumType = ['BLUETOOTH', 'WIFI', 'BATTERY', 'DATA_TRAFFIC', 'DEVICE_EVENT', 'INSTALLED_APP', 'CALL_LOG', 'MESSAGE',
+        'LOCATION', 'FITNESS', 'PHYSICAL_ACTIVITY', 'PHYSICAL_ACTIVITY_TRANSITION', 'SURVEY'];
     // const datumType = ['APP_USAGE_EVENT', 'BATTERY', 'BLUETOOTH', 'CALL_LOG', 'DATA_TRAFFIC',
     //     'DEVICE_EVENT', 'FITNESS', 'EMBEDDED_SENSOR', 'EXTERNAL_SENSOR', 'INSTALLED_APP', 'KEY_LOG',
     //     'LOCATION', 'MEDIA', 'MESSAGE', 'NOTIFICATION', 'PHYSICAL_ACTIVITY',
     //     'PHYSICAL_ACTIVITY_TRANSITION', 'SURVEY', 'WIFI'];
-    const category = ['SMARTPHONE_USAGE', 'SOCIAL_INTERACTION', 'PHYSICAL_ACTIVITY'];
+    const category = ['CONNECTIVITY', 'SMARTPHONE_USAGE', 'SOCIAL_INTERACTION', 'PHYSICAL_ACTIVITY', 'EMOTION'];
     const type_cat = {
-        'BATTERY': 'SMARTPHONE_USAGE', 'DATA_TRAFFIC': 'SMARTPHONE_USAGE',
+        'BLUETOOTH': 'CONNECTIVITY', 'WIFI': 'CONNECTIVITY',
+        'BATTERY': 'SMARTPHONE_USAGE', 'DEVICE_EVENT': 'SMARTPHONE_USAGE', 'DATA_TRAFFIC': 'SMARTPHONE_USAGE', 'INSTALLED_APP': 'SMARTPHONE_USAGE',
         'CALL_LOG': 'SOCIAL_INTERACTION', 'MESSAGE': 'SOCIAL_INTERACTION',
-        'LOCATION': 'PHYSICAL_ACTIVITY', 'PHYSICAL_ACTIVITY_TRANSITION': 'PHYSICAL_ACTIVITY'
+        'LOCATION': 'PHYSICAL_ACTIVITY', 'FITNESS': 'PHYSICAL_ACTIVITY', 'PHYSICAL_ACTIVITY': 'PHYSICAL_ACTIVITY',
+        'PHYSICAL_ACTIVITY_TRANSITION': 'PHYSICAL_ACTIVITY', 'SURVEY': 'EMOTION'
     }
     const cat_type = {
-        'SMARTPHONE_USAGE': ['BATTERY', 'DATA_TRAFFIC'],
+        'CONNECTIVITY': ['BLUETOOTH', 'WIFI'],
+        'SMARTPHONE_USAGE': ['BATTERY', 'DATA_TRAFFIC', 'DEVICE_EVENT', 'INSTALLED_APP'],
         'SOCIAL_INTERACTION': ['CALL_LOG', 'MESSAGE'],
-        'PHYSICAL_ACTIVITY': ['LOCATION', 'PHYSICAL_ACTIVITY_TRANSITION']
+        'PHYSICAL_ACTIVITY': ['LOCATION', 'FITNESS', 'PHYSICAL_ACTIVITY', 'PHYSICAL_ACTIVITY_TRANSITION'],
+        'EMOTION': ['SURVEY']
     }
     const classify = {
-        'BATTERY': ['num'], 'DATA_TRAFFIC': ['num', 'num'],
+        'BLUETOOTH': ['cat_a'], 'WIFI': ['num'],
+        'BATTERY': ['num'], 'DATA_TRAFFIC': ['num', 'num'], 'DEVICE_EVENT': ['cat_b'], 'INSTALLED_APP': ['num'],
         'CALL_LOG': ['cat_b'], 'MESSAGE': ['cat_a'],
-        'LOCATION': ['num'], 'PHYSICAL_ACTIVITY_TRANSITION': ['cat_a']
+        'LOCATION': ['num'], 'FITNESS': ['num', 'num', 'num'], 'PHYSICAL_ACTIVITY': ['cat_b'],
+        'PHYSICAL_ACTIVITY_TRANSITION': ['cat_a'], 'SURVEY': ['cat_a']
     }
     const cat_colors = {
-        'SMARTPHONE_USAGE': "#F2BA4E", 'SOCIAL_INTERACTION': '#5ea280', 'PHYSICAL_ACTIVITY': '#2688AC'
+        'CONNECTIVITY': "#e69138", 'SMARTPHONE_USAGE': "#F2BA4E",
+        'SOCIAL_INTERACTION': '#5ea280', 'PHYSICAL_ACTIVITY': '#397cb2', 'EMOTION': '#7357b9'
     }
     const colors = {
+        'BLUETOOTH': {'NONE': "#fce5cd", 'BONDED': "#e69138"}, 'WIFI': ["#F2BA4E"],
         'BATTERY': ["#F2BA4E"], 'DATA_TRAFFIC': ['#F3D25B', '#F1CB44'],
-        'CALL_LOG': {'MISSED': "#91d5b3", 'INCOMING': "#76CBA1", 'OUTGOING': "#5ea280", 'REJECTED': "#3b6550"},
-        'MESSAGE': {'INBOX': "#65c97d", 'SENT': "#257037"}, 'LOCATION': ["#2688AC"], 
+        'DEVICE_EVENT': {'SCREEN_ON': "#f3da5b"}, 'INSTALLED_APP': ["#ead960"],
+        'CALL_LOG': {'MISSED': "#b6d7a8", 'INCOMING': "#93c47d", 'OUTGOING': "#6aa84f", 'REJECTED': "#38761d"},
+        'MESSAGE': {'INBOX': "#95cebf", 'SENT': "#458e7b"}, 'LOCATION': ["#45818e"], 
+        'FITNESS': ['#3d90c6', '#3d85c6', '#3d71c6'],
+        'PHYSICAL_ACTIVITY': {
+            'STILL': '#e2edf7', 'TILTING': '#cfe2f3', 'WALKING': '#9fc5e8', 'RUNNING': '#6fa8dc', 
+            'ON_FOOT': '#3d85c6', 'ON_BICYCLE': '#0b5394', 'IN_VEHICLE': '#073763'},
         'PHYSICAL_ACTIVITY_TRANSITION': {
-            'STILL': '#cfe2f3', 'TILTING': '#9fc5e8', 'WALKING': '#6fa8dc',
-            'RUNNING': '#3d85c6', 'ON_BICYCLE': '#0b5394', 'IN_VEHICLE': '#073763'}
+            'STILL': '#e2edf7', 'TILTING': '#cfe2f3', 'WALKING': '#9fc5e8', 'RUNNING': '#6fa8dc', 
+            'ON_FOOT': '#3d85c6', 'ON_BICYCLE': '#0b5394', 'IN_VEHICLE': '#073763'},
+        'SURVEY': {'ENTERED': '#7357b9'}
     }
     const colored_field = {
-        'BATTERY': ['eval_level'], 'DATA_TRAFFIC': ['eval_txBytes', 'eval_rxBytes'],
-        'CALL_LOG': ['eval_type'], 'MESSAGE': ['eval_messagebox'],
-        'LOCATION': ['eval_speed'], 'PHYSICAL_ACTIVITY_TRANSITION': ['eval_type']
+        'BLUETOOTH': ['eval_bondState'], 'WIFI': ['eval_numOfAP'],
+        'BATTERY': ['eval_level'], 'DEVICE_EVENT': ['eval_screenOn'], 'DATA_TRAFFIC': ['eval_txBytes', 'eval_rxBytes'],
+        'INSTALLED_APP': ['eval_numOfApps'], 'CALL_LOG': ['eval_type'], 'MESSAGE': ['eval_messageBox'],
+        'LOCATION': ['eval_speed'], 'FITNESS': ['eval_stepCount', 'eval_calories', 'eval_distance'],
+        'PHYSICAL_ACTIVITY': ['eval_type'], 'PHYSICAL_ACTIVITY_TRANSITION': ['eval_type'], 'SURVEY': ['eval_isEntered']
     }
 
 
@@ -140,7 +164,9 @@ function ValueOverview() {
         var tmp_text = ''
         for (var i = 0; i < keys.length; i ++) {
             if (!(classify[datum.datumType].includes('num') && keys[i] == 'eval_duration')) {
-                tmp_text += '\n' + keys[i].replace('eval_', '') + ': ' + datum[keys[i]];
+                let name = keys[i].replace('eval_', '')
+                tmp_text += '\n' + name.charAt(0).toUpperCase() + name.slice(1) + ': ' + datum[keys[i]];
+                if (name.includes('duration')) tmp_text += ' mills'
             }
         }
         var type_name = datum.datumType
@@ -224,9 +250,11 @@ function ValueOverview() {
     var [tooltip_text, setTooltip] = useState('');
     var [keycnt, setKeyCnt] = useState(0);
     var [types, setTypes] = useState([
-        'BATTERY', 'DATA_TRAFFIC', 'CALL_LOG', 'MESSAGE', 'LOCATION', 'PHYSICAL_ACTIVITY_TRANSITION']);
+        'BLUETOOTH', 'WIFI', 'BATTERY', 'DATA_TRAFFIC', 'DEVICE_EVENT', 'INSTALLED_APP', 'CALL_LOG', 'MESSAGE',
+        'LOCATION', 'FITNESS', 'PHYSICAL_ACTIVITY', 'PHYSICAL_ACTIVITY_TRANSITION',
+        'SURVEY']);
     var [cats, setCats] = useState([
-        'SMARTPHONE_USAGE', 'SOCIAL_INTERACTION', 'PHYSICAL_ACTIVITY']);
+        'CONNECTIVITY', 'SMARTPHONE_USAGE', 'SOCIAL_INTERACTION', 'PHYSICAL_ACTIVITY', 'EMOTION']);
 
     // use effect
 
@@ -236,12 +264,19 @@ function ValueOverview() {
         var tmp_max = -1;
 
         Promise.all([
+            d3.csv(eval_bluetooth),
+            d3.csv(eval_wifi),
             d3.csv(eval_battery),
             d3.csv(eval_data_traffic),
+            d3.csv(eval_device_event),
+            d3.csv(eval_installed_app),
             d3.csv(eval_call_log),
             d3.csv(eval_message),
             d3.csv(eval_location),
-            d3.csv(eval_physical_activity_transition)
+            d3.csv(eval_fitness),
+            d3.csv(eval_physical_activity),
+            d3.csv(eval_physical_activity_transition),
+            d3.csv(eval_survey)
         ]).then(function(allData) {
             var merged = d3.merge(allData);
 
@@ -338,7 +373,9 @@ function ValueOverview() {
                     .attr('x', -15).attr('y', height / 2 + 10)
                     .attr('fill', 'grey').attr('text-anchor', `end`)
                     .style('font-size', '12px')
-                    .text(() => { return fields[field].replace('eval_', '')} );
+                    .text(() => { 
+                        let name = fields[field].replace('eval_', '')
+                        return name.charAt(0).toUpperCase() + name.slice(1)} );
 
                 var xAixs = d3.axisBottom(xScale).ticks(4).tickSize(-innerHeight).tickPadding(25).tickFormat('');
                 const xAxisG = g
@@ -350,6 +387,8 @@ function ValueOverview() {
                 
                 const max_val = d3.max(this_type, d => Number(d[fields[field]]));
                 const min_val = d3.min(this_type, d => Number(d[fields[field]]));
+                console.log(max_val, this_type)
+                debugger;
                 
                 g.append('g').attr("class", "appended")
                     .selectAll("rect")
@@ -358,18 +397,23 @@ function ValueOverview() {
                     .append("rect").attr("class", "appended").attr('r', 0)
                     .attr("fill", function(d) { 
                         if (classify[types[i]][field].includes('cat')) {
-                            return colors[types[i]][d[fields[field]]];
+                            if (d[fields[field]] in colors[types[i]]) return colors[types[i]][d[fields[field]]];
+                            else return 'transparent';
                         }
                         else if (classify[types[i]][field].includes('num')) {
-                            if(types[i] == 'LOCATION') console.log()
-
                             var myColor
-                            if (max_val - min_val > 10000) myColor = d3.scaleLog();
-                            else myColor = d3.scaleLinear();
-                            myColor
-                                .range(["white", colors[types[i]][field]])
-                                .domain([1, max_val])
-                            return myColor(d[fields[field]])
+                            if (max_val - min_val > 10000) {
+                                myColor = d3.scaleLog()
+                                    .range(["white", colors[types[i]][field]])
+                                    .domain([1, max_val])
+                            }
+                            else {
+                                myColor = d3.scaleLinear()
+                                    .range(["white", colors[types[i]][field]])
+                                    .domain([0, max_val])
+                            }
+                            if (field in colors[types[i]]) return myColor(d[fields[field]]);
+                            else return 'transparent';
                         }
                     })
                     .attr("x", function(d) {
@@ -379,7 +423,7 @@ function ValueOverview() {
                         if (classify[types[i]][field] == 'cat_a') { return minBarWidth; }
                         else if (classify[types[i]][field] == 'cat_b' || classify[types[i]][field] == 'num') {
                             if (d.eval_duration != undefined) {
-                                let val = Math.max(minBarWidth, 1200 * d.eval_duration * 1000 / (range[1] - range[0]));
+                                let val = Math.max(minBarWidth, innerWidth * d.eval_duration / (range[1] - range[0]));
                                 let xpos = xScale(xValue(d))
                                 if (xpos + val > 980) return 980 - xpos;
                                 else return val;
@@ -418,13 +462,14 @@ function ValueOverview() {
                             .attr("fill", '#5b5b5b')
                             .attr("x", 1005).attr("y",  - margin.top + (12 * 0) + 9)
                             .attr('font-size', '9px').attr('font-weight', 'lighter')
-                            .text(() => {return max_val.toLocaleString()});
+                            .text(max_val.toLocaleString());
                         new_group
                             .append("text").attr("class", "appended")
                             .attr("fill", '#5b5b5b')
                             .attr("x", 1005).attr("y",  - margin.top + (12 * 3) + 9)
                             .attr('font-size', '9px').attr('font-weight', 'lighter')
-                            .text(() => {return min_val.toLocaleString()});
+                            .text(0);
+                            // .text(min_val.toLocaleString());
                     }
                 } else {
                     const new_group = g.append('g').attr("class", "appended")
