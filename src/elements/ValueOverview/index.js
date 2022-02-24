@@ -29,7 +29,7 @@ function ValueOverview() {
     const legend_width = 200;
     const height = 50;
     const minBarWidth = 4;
-    const minDistance = 1000 * 60 * 60 * 6;
+    const minDistance = 1000 * 60 * 60 * 1;
     const ITEM_HEIGHT = 48;
     const ITEM_PADDING_TOP = 8;
     const MenuProps = {
@@ -518,7 +518,7 @@ function ValueOverview() {
     // render
     return (
         <div className="fragment">
-            <div className="title" style ={{width: '1200px', textAlign: 'center', marginLeft: '-12px'}}>
+            <div className="title" style ={{width: '1300px', textAlign: 'center', marginLeft: '-50px'}}>
                 <h1 style ={{marginBottom: '30px'}}>One User's Value Overview along Time</h1>
 
                 <mui.FormControl style ={{marginLeft: '140px'}}>
@@ -607,7 +607,7 @@ function ValueOverview() {
                     </MySelect>
                 </mui.FormControl>
 
-                <mui.FormControl sx={{ width: 300 }}>
+                <mui.FormControl sx={{ width: 400 }}>
                     <mui.Slider
                         min={min_minute}
                         step={10 * 60 * 1000}
