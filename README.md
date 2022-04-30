@@ -20,3 +20,7 @@ https://www.youtube.com/watch?v=exIFSs-HolI&feature=youtu.be
 
 ## Deployed Link
 https://w-intern.web.app/overview/27
+
+* The link above is the page of the user that is used for the demo video.
+Accessing to other user’s overview page is available with the following link format;
+https://w-intern.web.app/overview/[userIdNum]
