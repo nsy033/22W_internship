@@ -16,7 +16,12 @@
 
 # Final Result
 ## Demo video
-https://www.youtube.com/watch?v=exIFSs-HolI&feature=youtu.be
+
+<a href="https://www.youtube.com/watch?v=exIFSs-HolI">
+  <img src=https://img.youtube.com/vi/exIFSs-HolI/maxresdefault.jpg  width="480" height="320"/>
+</a>
+
+https://youtu.be/exIFSs-HolI
 
 ## Deployed Link
 https://w-intern.web.app/overview/27
